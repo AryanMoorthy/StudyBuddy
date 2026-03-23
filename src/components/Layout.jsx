@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { 
   MdDashboard, 
@@ -6,39 +6,54 @@ import {
   MdAssignment, 
   MdHistory, 
   MdAutoAwesome,
-  MdSchool
+  MdSchool,
+  MdMenu,
+  MdClose
 } from 'react-icons/md';
 
-const Sidebar = () => {
-  const links = [
-    { to: '/dashboard', icon: <MdDashboard />, label: 'Dashboard' },
-    { to: '/subjects', icon: <MdMenuBook />, label: 'Subjects' },
-    { to: '/tasks', icon: <MdAssignment />, label: 'Tasks' },
-    { to: '/revision', icon: <MdHistory />, label: 'Revision' },
-    { to: '/ai-tools', icon: <MdAutoAwesome />, label: 'AI Assistant' },
-  ];
+const links = [
+  { to: '/dashboard', icon: <MdDashboard />, label: 'Dashboard' },
+  { to: '/subjects', icon: <MdMenuBook />, label: 'Subjects' },
+  { to: '/tasks', icon: <MdAssignment />, label: 'Tasks' },
+  { to: '/revision', icon: <MdHistory />, label: 'Revision' },
+  { to: '/ai-tools', icon: <MdAutoAwesome />, label: 'AI' },
+];
 
-  return (
-    <div className="sidebar">
-      <div className="logo">
-        <MdSchool size={30} />
-        <span>StudyBuddy</span>
-      </div>
-      <nav className="nav-links">
-        {links.map((link) => (
-          <NavLink 
-            key={link.to} 
-            to={link.to} 
-            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-          >
-            {link.icon}
-            <span>{link.label}</span>
-          </NavLink>
-        ))}
-      </nav>
+const Sidebar = () => (
+  <div className="sidebar">
+    <div className="logo">
+      <MdSchool size={28} />
+      <span>StudyBuddy</span>
     </div>
-  );
-};
+    <nav className="nav-links">
+      {links.map((link) => (
+        <NavLink 
+          key={link.to} 
+          to={link.to} 
+          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+        >
+          {link.icon}
+          <span>{link.label}</span>
+        </NavLink>
+      ))}
+    </nav>
+  </div>
+);
+
+const BottomNav = () => (
+  <nav className="bottom-nav">
+    {links.map((link) => (
+      <NavLink 
+        key={link.to} 
+        to={link.to} 
+        className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
+      >
+        <span className="bottom-nav-icon">{link.icon}</span>
+        <span className="bottom-nav-label">{link.label}</span>
+      </NavLink>
+    ))}
+  </nav>
+);
 
 const Layout = () => {
   return (
@@ -47,6 +62,7 @@ const Layout = () => {
       <main className="main-content">
         <Outlet />
       </main>
+      <BottomNav />
     </div>
   );
 };
