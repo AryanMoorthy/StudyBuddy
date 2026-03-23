@@ -11,7 +11,7 @@ Run locally with:
 npm install
 npm run dev
 ```
-Then open **https://study-buddy-one-omega.vercel.app/dashboard** in your browser.
+Then open **https://study-buddy-one-omega.vercel.app/** in your browser.
 
 ---
 
