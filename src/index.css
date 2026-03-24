@@ -142,8 +142,8 @@ body {
   justify-content: center;
 }
 
-.mobile-close {
-  display: none;
+.mobile-header {
+  display: flex !important;
 }
 
 .sidebar-overlay {

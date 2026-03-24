@@ -26,7 +26,6 @@ const Sidebar = ({ isOpen, onClose }) => (
         <MdSchool size={28} />
         <span>StudyBuddy</span>
       </div>
-      <button className="mobile-close" onClick={onClose}><MdClose /></button>
     </div>
     <nav className="nav-links">
       {links.map((link) => (
