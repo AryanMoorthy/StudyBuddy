@@ -20,7 +20,7 @@ const links = [
 ];
 
 const Sidebar = ({ isOpen, onClose }) => (
-  <div className={`sidebar ${isOpen ? 'open' : ''}`}>
+  <div className={`sidebar ${isOpen ? 'open' : ''}`} onClick={(e) => e.stopPropagation()}>
     <div className="sidebar-header">
       <div className="logo">
         <MdSchool size={28} />
@@ -34,7 +34,10 @@ const Sidebar = ({ isOpen, onClose }) => (
           key={link.to} 
           to={link.to} 
           className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-          onClick={() => window.innerWidth < 1024 && onClose()}
+          onClick={() => {
+            console.log('Navigating to:', link.to);
+            if (window.innerWidth <= 1024) onClose();
+          }}
         >
           {link.icon}
           <span>{link.label}</span>
