@@ -15,6 +15,7 @@ const Tasks = () => {
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ subject: 'All', priority: 'All' });
   const [newTask, setNewTask] = useState({ title: '', subject: '', topic: '', deadline: '', priority: 'Medium' });
+  const [editingTask, setEditingTask] = useState(null);
 
   const categorized = getCategorizedTasks();
   const currentTasks = categorized[activeTab].filter(task => {
@@ -29,17 +30,43 @@ const Tasks = () => {
     if (!newTask.title || !newTask.subject || !newTask.topic || !newTask.deadline) {
       return toast.error('Please fill all required fields');
     }
-    addTask(newTask);
+    
+    if (editingTask) {
+      updateTask(editingTask.id, newTask);
+      toast.success('Task updated successfully!');
+    } else {
+      addTask(newTask);
+      toast.success('Task added successfully!');
+    }
+    
+    setEditingTask(null);
     setNewTask({ title: '', subject: '', topic: '', deadline: '', priority: 'Medium' });
     setShowModal(false);
-    toast.success('Task added successfully!');
+  };
+
+  const handleEditTask = (task) => {
+    setEditingTask(task);
+    setNewTask({
+      title: task.title,
+      subject: task.subject,
+      topic: task.topic,
+      deadline: task.deadline,
+      priority: task.priority
+    });
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingTask(null);
+    setNewTask({ title: '', subject: '', topic: '', deadline: '', priority: 'Medium' });
   };
 
   return (
     <div className="tasks-page">
       <header className="page-header">
         <h1>Study Tasks</h1>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+        <button className="btn btn-primary" onClick={() => { setEditingTask(null); setShowModal(true); }}>
           <MdAdd /> New Task
         </button>
       </header>
@@ -80,7 +107,13 @@ const Tasks = () => {
               key={task.id} 
               task={task} 
               onStatusToggle={() => updateTask(task.id, { status: task.status === 'Completed' ? 'Pending' : 'Completed' })}
-              onDelete={() => deleteTask(task.id)}
+              onEdit={handleEditTask}
+              onDelete={() => {
+                if(window.confirm('Are you sure you want to delete this task?')) {
+                  deleteTask(task.id);
+                  toast.success('Task deleted');
+                }
+              }}
             />
           ))
         ) : (
@@ -98,9 +131,9 @@ const Tasks = () => {
             <div className="modal-header">
               <div className="header-title">
                 <MdAdd className="header-icon" />
-                <h2>Create New Task</h2>
+                <h2>{editingTask ? 'Edit Task' : 'Create New Task'}</h2>
               </div>
-              <button className="close-btn" onClick={() => setShowModal(false)}><MdClose /></button>
+              <button className="close-btn" onClick={handleCloseModal}><MdClose /></button>
             </div>
 
             <form onSubmit={handleAddTask} className="premium-form">
@@ -156,8 +189,8 @@ const Tasks = () => {
               </div>
 
               <div className="modal-footer">
-                <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>Discard</button>
-                <button type="submit" className="btn btn-primary btn-glow">Create Task</button>
+                <button type="button" className="btn btn-outline" onClick={handleCloseModal}>Discard</button>
+                <button type="submit" className="btn btn-primary btn-glow">{editingTask ? 'Update Task' : 'Create Task'}</button>
               </div>
             </form>
           </motion.div>

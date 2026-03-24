@@ -6,8 +6,8 @@ const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/
 export const generateStudyMaterial = async (type, topic) => {
   const prompts = {
     summary: `Generate a concise and structured study summary for the topic: ${topic}. Include key concepts and bullet points. Use Markdown.`,
-    questions: `Generate 5 practice questions with answers for the topic: ${topic}. Use Markdown.`,
-    flashcards: `Generate 5 flashcards (Front: Question/Term, Back: Answer/Definition) for the topic: ${topic}. Use Markdown.`
+    questions: `Generate 5 practice questions with answers for the topic: ${topic}. Return exactly and ONLY a valid JSON array of objects, with no markdown formatting and no code blocks. Each object must have "question" (string), "options" (array of exactly 4 strings), "correctAnswer" (string, exact match to one of the options), and "explanation" (string, briefly explaining why the answer is correct).`,
+    flashcards: `Generate 5 flashcards for the topic: ${topic}. Return exactly and ONLY a valid JSON array of objects, with no markdown formatting and no code blocks. Each object must have "front" (Question/Term as string) and "back" (Answer/Definition as string).`
   };
 
   const prompt = prompts[type] || prompts.summary;

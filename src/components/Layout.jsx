@@ -40,21 +40,6 @@ const Sidebar = () => (
   </div>
 );
 
-const BottomNav = () => (
-  <nav className="bottom-nav">
-    {links.map((link) => (
-      <NavLink 
-        key={link.to} 
-        to={link.to} 
-        className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
-      >
-        <span className="bottom-nav-icon">{link.icon}</span>
-        <span className="bottom-nav-label">{link.label}</span>
-      </NavLink>
-    ))}
-  </nav>
-);
-
 const Layout = () => {
   return (
     <div className="app-container">
@@ -62,7 +47,6 @@ const Layout = () => {
       <main className="main-content">
         <Outlet />
       </main>
-      <BottomNav />
     </div>
   );
 };

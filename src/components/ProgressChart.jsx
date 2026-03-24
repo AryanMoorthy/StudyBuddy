@@ -58,6 +58,7 @@ const ProgressChart = ({ data, type = "bar" }) => {
             axisLine={false} 
             tickLine={false} 
             tick={{ fill: '#94a3b8', fontSize: 12 }} 
+            allowDecimals={false}
           />
           <Tooltip 
             cursor={{ fill: 'rgba(255,255,255,0.05)' }}

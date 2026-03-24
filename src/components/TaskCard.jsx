@@ -1,8 +1,8 @@
 import React from 'react';
-import { MdAccessTime, MdPriorityHigh, MdCheckCircle, MdRadioButtonUnchecked } from 'react-icons/md';
+import { MdAccessTime, MdPriorityHigh, MdCheckCircle, MdRadioButtonUnchecked, MdEdit, MdDelete } from 'react-icons/md';
 import { format } from 'date-fns';
 
-const TaskCard = ({ task, onStatusToggle, onDelete }) => {
+const TaskCard = ({ task, onStatusToggle, onEdit, onDelete }) => {
   const priorityColors = {
     High: '#ef4444',
     Medium: '#f59e0b',
@@ -20,6 +20,14 @@ const TaskCard = ({ task, onStatusToggle, onDelete }) => {
         <div className="task-title-group">
           <h4 className={isCompleted ? 'strikethrough' : ''}>{task.title}</h4>
           <span className="task-meta">{task.subject} • {task.topic}</span>
+        </div>
+        <div className="task-actions">
+          <button className="action-btn edit" onClick={() => onEdit(task)} title="Edit Task">
+            <MdEdit size={18} />
+          </button>
+          <button className="action-btn delete" onClick={() => onDelete(task.id)} title="Delete Task">
+            <MdDelete size={18} />
+          </button>
         </div>
       </div>
       
@@ -86,6 +94,36 @@ const TaskCard = ({ task, onStatusToggle, onDelete }) => {
         .task-tag.deadline {
           background: var(--glass);
           color: var(--text-muted);
+        }
+        .task-actions {
+          display: flex;
+          gap: 0.5rem;
+          margin-left: auto;
+          opacity: 0;
+          transition: var(--transition);
+        }
+        .task-card:hover .task-actions {
+          opacity: 1;
+        }
+        .action-btn {
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          color: var(--text-muted);
+          padding: 0.4rem;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          transition: var(--transition);
+        }
+        .action-btn:hover {
+          background: var(--glass);
+        }
+        .action-btn.edit:hover {
+          color: var(--primary);
+        }
+        .action-btn.delete:hover {
+          color: #ef4444;
         }
       `}</style>
     </div>

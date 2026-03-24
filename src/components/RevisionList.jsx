@@ -1,5 +1,5 @@
 import React from 'react';
-import { MdCalendarToday, MdChevronRight } from 'react-icons/md';
+import { MdCalendarToday, MdChevronRight, MdCheckCircle } from 'react-icons/md';
 import { format } from 'date-fns';
 
 const RevisionList = ({ revisions, onAction }) => {
@@ -7,16 +7,16 @@ const RevisionList = ({ revisions, onAction }) => {
     <div className="revision-list">
       {revisions.length > 0 ? (
         revisions.map((rev) => (
-          <div key={rev.id} className="revision-item card">
+          <div key={rev.id} className={`revision-item card ${rev.status === 'Completed' ? 'completed' : ''}`}>
             <div className="rev-icon">
-              <MdCalendarToday />
+              {rev.status === 'Completed' ? <MdCheckCircle /> : <MdCalendarToday />}
             </div>
             <div className="rev-info">
-              <h4>{rev.title}</h4>
+              <h4 className={rev.status === 'Completed' ? 'strikethrough' : ''}>{rev.title}</h4>
               <p>{rev.subject} • {format(new Date(rev.deadline), 'MMM dd')}</p>
             </div>
-            <button className="rev-btn" onClick={() => onAction(rev)}>
-              <MdChevronRight />
+            <button className="rev-btn" onClick={() => onAction(rev)} title={rev.status === 'Completed' ? "Mark as Pending" : "Mark as Completed"}>
+              {rev.status === 'Completed' ? <MdCheckCircle color="#10b981" /> : <MdChevronRight />}
             </button>
           </div>
         ))
@@ -37,6 +37,10 @@ const RevisionList = ({ revisions, onAction }) => {
           padding: 1rem;
           background: var(--glass);
         }
+        .revision-item.completed {
+          opacity: 0.7;
+          border-color: #10b98140;
+        }
         .rev-icon {
           width: 40px;
           height: 40px;
@@ -48,12 +52,20 @@ const RevisionList = ({ revisions, onAction }) => {
           justify-content: center;
           font-size: 1.25rem;
         }
+        .revision-item.completed .rev-icon {
+          background: rgba(16, 185, 129, 0.1);
+          color: #10b981;
+        }
         .rev-info {
           flex: 1;
         }
         .rev-info h4 {
           font-size: 0.95rem;
           margin-bottom: 0.2rem;
+        }
+        .strikethrough {
+          text-decoration: line-through;
+          color: var(--text-muted);
         }
         .rev-info p {
           font-size: 0.8rem;
