@@ -51,7 +51,7 @@ const Dashboard = () => {
           <h3>Upcoming Revisions</h3>
           <RevisionList 
             revisions={upcomingRevisions.slice(0, 5)} 
-            onAction={(task) => updateTask(task.id, { status: 'Completed', isRevision: false })}
+            onAction={(task) => updateTask(task.id, { status: task.status === 'Completed' ? 'Revision' : 'Completed' })}
           />
         </div>
       </div>

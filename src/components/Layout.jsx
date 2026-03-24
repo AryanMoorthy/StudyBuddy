@@ -16,14 +16,17 @@ const links = [
   { to: '/subjects', icon: <MdMenuBook />, label: 'Subjects' },
   { to: '/tasks', icon: <MdAssignment />, label: 'Tasks' },
   { to: '/revision', icon: <MdHistory />, label: 'Revision' },
-  { to: '/ai-tools', icon: <MdAutoAwesome />, label: 'AI' },
+  { to: '/ai-tools', icon: <MdAutoAwesome />, label: 'AI Assistant' },
 ];
 
-const Sidebar = () => (
-  <div className="sidebar">
-    <div className="logo">
-      <MdSchool size={28} />
-      <span>StudyBuddy</span>
+const Sidebar = ({ isOpen, onClose }) => (
+  <div className={`sidebar ${isOpen ? 'open' : ''}`}>
+    <div className="sidebar-header">
+      <div className="logo">
+        <MdSchool size={28} />
+        <span>StudyBuddy</span>
+      </div>
+      <button className="mobile-close" onClick={onClose}><MdClose /></button>
     </div>
     <nav className="nav-links">
       {links.map((link) => (
@@ -31,6 +34,7 @@ const Sidebar = () => (
           key={link.to} 
           to={link.to} 
           className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+          onClick={() => window.innerWidth < 1024 && onClose()}
         >
           {link.icon}
           <span>{link.label}</span>
@@ -41,9 +45,29 @@ const Sidebar = () => (
 );
 
 const Layout = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    console.log('Toggling sidebar:', !isSidebarOpen);
+    setIsSidebarOpen(prev => !prev);
+  }
+
   return (
     <div className="app-container">
-      <Sidebar />
+      <header className="mobile-header">
+        <button className="menu-btn" onClick={toggleSidebar}>
+          <MdMenu />
+        </button>
+        <div className="logo">
+          <MdSchool size={24} />
+          <span>StudyBuddy</span>
+        </div>
+      </header>
+
+      <div className={`sidebar-overlay ${isSidebarOpen ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)} />
+      
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      
       <main className="main-content">
         <Outlet />
       </main>

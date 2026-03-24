@@ -169,5 +169,5 @@ All data (subjects, topics, tasks) is stored in the browser's **localStorage**, 
 
 ## 👨‍💻 Author
 
-**Aryan**  
-Built as part of the Scaler Academy React curriculum — RD 3 Project.
+**Aryan Moorthy**  
+Built as part of the Scaler School of Technology's React curriculum — RD 3 Project.

@@ -14,6 +14,7 @@ const Revision = () => {
   const { subjects, topics } = useSubjects();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
+  const [editingRevision, setEditingRevision] = useState(null);
   const [newRevision, setNewRevision] = useState({ title: '', subject: '', topic: '', deadline: format(new Date(), 'yyyy-MM-dd'), priority: 'Medium' });
 
   const revisionTasks = tasks.filter(t => t.status === 'Revision' || t.isRevision);
@@ -24,10 +25,40 @@ const Revision = () => {
     if (!newRevision.title || !newRevision.subject || !newRevision.topic || !newRevision.deadline) {
       return toast.error('Please fill all required fields');
     }
-    addTask({ ...newRevision, status: 'Revision', isRevision: true });
+    
+    if (editingRevision) {
+      updateTask(editingRevision.id, { ...newRevision, status: editingRevision.status });
+      toast.success('Revision updated!');
+    } else {
+      addTask({ ...newRevision, status: 'Revision', isRevision: true });
+      toast.success('Revision scheduled!');
+    }
+    handleCloseModal();
+  };
+
+  const handleEditRevision = (revision) => {
+    setEditingRevision(revision);
+    setNewRevision({
+      title: revision.title,
+      subject: revision.subject,
+      topic: revision.topic,
+      deadline: revision.deadline,
+      priority: revision.priority
+    });
+    setShowModal(true);
+  };
+
+  const handleDeleteRevision = (id) => {
+    if (window.confirm('Are you sure you want to delete this revision?')) {
+      deleteTask(id);
+      toast.success('Revision deleted');
+    }
+  };
+
+  const handleCloseModal = () => {
     setShowModal(false);
+    setEditingRevision(null);
     setNewRevision({ title: '', subject: '', topic: '', deadline: format(new Date(), 'yyyy-MM-dd'), priority: 'Medium' });
-    toast.success('Revision scheduled!');
   };
 
   const tileClassName = ({ date, view }) => {
@@ -71,6 +102,8 @@ const Revision = () => {
           <RevisionList 
             revisions={tasksOnSelectedDate}
             onAction={(task) => updateTask(task.id, { status: task.status === 'Completed' ? 'Revision' : 'Completed' })}
+            onEdit={handleEditRevision}
+            onDelete={handleDeleteRevision}
           />
         </div>
       </div>
@@ -85,9 +118,9 @@ const Revision = () => {
             <div className="modal-header">
               <div className="header-title">
                 <MdEventNote className="header-icon" />
-                <h2>Schedule Revision</h2>
+                <h2>{editingRevision ? 'Edit Revision' : 'Schedule Revision'}</h2>
               </div>
-              <button className="close-btn" onClick={() => setShowModal(false)}><MdClose /></button>
+              <button className="close-btn" onClick={handleCloseModal}><MdClose /></button>
             </div>
 
             <form onSubmit={handleAddRevision} className="premium-form">
@@ -128,8 +161,8 @@ const Revision = () => {
               </div>
 
               <div className="modal-footer">
-                <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>Discard</button>
-                <button type="submit" className="btn btn-primary btn-glow">Schedule</button>
+                <button type="button" className="btn btn-outline" onClick={handleCloseModal}>Discard</button>
+                <button type="submit" className="btn btn-primary btn-glow">{editingRevision ? 'Update' : 'Schedule'}</button>
               </div>
             </form>
           </motion.div>
@@ -229,6 +262,10 @@ const Revision = () => {
         :global(.react-calendar__month-view__days__day--neighboringMonth) {
           opacity: 0.1 !important;
           pointer-events: none !important;
+        }
+        :global(.react-calendar__month-view__days__day--neighboringMonth.react-calendar__month-view__days__day--weekend) {
+          color: inherit !important;
+          opacity: 0.05 !important;
         }
         
         :global(.has-revision) {

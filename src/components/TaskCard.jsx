@@ -9,6 +9,8 @@ const TaskCard = ({ task, onStatusToggle, onEdit, onDelete }) => {
     Low: '#10b981'
   };
 
+  const isRevision = task.isRevision || task.status === 'Revision';
+
   const isCompleted = task.status === 'Completed';
 
   return (
@@ -18,7 +20,10 @@ const TaskCard = ({ task, onStatusToggle, onEdit, onDelete }) => {
           {isCompleted ? <MdCheckCircle color="#10b981" /> : <MdRadioButtonUnchecked />}
         </button>
         <div className="task-title-group">
-          <h4 className={isCompleted ? 'strikethrough' : ''}>{task.title}</h4>
+          <div className="task-title-row">
+            <h4 className={isCompleted ? 'strikethrough' : ''}>{task.title}</h4>
+            {isRevision && <span className="revision-badge">Revision</span>}
+          </div>
           <span className="task-meta">{task.subject} • {task.topic}</span>
         </div>
         <div className="task-actions">
@@ -81,6 +86,22 @@ const TaskCard = ({ task, onStatusToggle, onEdit, onDelete }) => {
           display: flex;
           gap: 0.75rem;
           margin-left: 2.25rem;
+        }
+        .task-title-row {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+        .revision-badge {
+          font-size: 0.65rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          background: rgba(236, 72, 153, 0.15);
+          color: #ec4892;
+          padding: 2px 6px;
+          border-radius: 4px;
+          border: 1px solid rgba(236, 72, 153, 0.3);
         }
         .task-tag {
           display: flex;

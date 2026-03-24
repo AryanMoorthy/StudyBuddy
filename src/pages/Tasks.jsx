@@ -14,7 +14,7 @@ const Tasks = () => {
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ subject: 'All', priority: 'All' });
-  const [newTask, setNewTask] = useState({ title: '', subject: '', topic: '', deadline: '', priority: 'Medium' });
+  const [newTask, setNewTask] = useState({ title: '', subject: '', topic: '', deadline: '', priority: 'Medium', isRevision: false });
   const [editingTask, setEditingTask] = useState(null);
 
   const categorized = getCategorizedTasks();
@@ -40,7 +40,7 @@ const Tasks = () => {
     }
     
     setEditingTask(null);
-    setNewTask({ title: '', subject: '', topic: '', deadline: '', priority: 'Medium' });
+    setNewTask({ title: '', subject: '', topic: '', deadline: '', priority: 'Medium', isRevision: false });
     setShowModal(false);
   };
 
@@ -51,7 +51,8 @@ const Tasks = () => {
       subject: task.subject,
       topic: task.topic,
       deadline: task.deadline,
-      priority: task.priority
+      priority: task.priority,
+      isRevision: task.isRevision || task.status === 'Revision'
     });
     setShowModal(true);
   };
@@ -59,7 +60,7 @@ const Tasks = () => {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingTask(null);
-    setNewTask({ title: '', subject: '', topic: '', deadline: '', priority: 'Medium' });
+    setNewTask({ title: '', subject: '', topic: '', deadline: '', priority: 'Medium', isRevision: false });
   };
 
   return (
@@ -188,6 +189,19 @@ const Tasks = () => {
                 </div>
               </div>
 
+              <div className="form-row">
+                <div className="form-section">
+                  <label className="checkbox-label">
+                    <input 
+                      type="checkbox" 
+                      checked={newTask.isRevision} 
+                      onChange={(e) => setNewTask({...newTask, isRevision: e.target.checked, status: e.target.checked ? 'Revision' : 'Pending'})} 
+                    />
+                    <span>Mark as Revision Task</span>
+                  </label>
+                </div>
+              </div>
+
               <div className="modal-footer">
                 <button type="button" className="btn btn-outline" onClick={handleCloseModal}>Discard</button>
                 <button type="submit" className="btn btn-primary btn-glow">{editingTask ? 'Update Task' : 'Create Task'}</button>
@@ -202,6 +216,10 @@ const Tasks = () => {
         .page-header { display: flex; justify-content: space-between; align-items: center; }
         .tasks-controls { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem; }
         .filters { display: flex; gap: 1rem; }
+        @media (max-width: 768px) {
+          .tasks-controls { flex-direction: column; align-items: stretch; }
+          .filters { flex-direction: column; }
+        }
         .filters select { background: var(--bg-dark); color: white; border: 1px solid var(--border); padding: 0.5rem; border-radius: 8px; }
         .tabs { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem; }
         .tab-btn {
@@ -220,6 +238,21 @@ const Tasks = () => {
         .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
         .count { background: rgba(0,0,0,0.2); padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; }
         .empty-state { grid-column: 1 / -1; text-align: center; padding: 4rem; color: var(--text-muted); }
+
+        .checkbox-label {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          cursor: pointer;
+          color: var(--text-main);
+          font-weight: 500;
+        }
+        .checkbox-label input {
+          width: 18px;
+          height: 18px;
+          cursor: pointer;
+          accent-color: var(--primary);
+        }
         
         /* Premium Modal Styles */
         .modal-overlay { 

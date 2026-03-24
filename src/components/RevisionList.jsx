@@ -1,25 +1,47 @@
-import React from 'react';
-import { MdCalendarToday, MdChevronRight, MdCheckCircle } from 'react-icons/md';
+import { MdCalendarToday, MdChevronRight, MdCheckCircle, MdEdit, MdDelete } from 'react-icons/md';
 import { format } from 'date-fns';
 
-const RevisionList = ({ revisions, onAction }) => {
+const RevisionList = ({ revisions, onAction, onEdit, onDelete }) => {
   return (
     <div className="revision-list">
       {revisions.length > 0 ? (
-        revisions.map((rev) => (
-          <div key={rev.id} className={`revision-item card ${rev.status === 'Completed' ? 'completed' : ''}`}>
-            <div className="rev-icon">
-              {rev.status === 'Completed' ? <MdCheckCircle /> : <MdCalendarToday />}
+        revisions.map((rev) => {
+          const isCompleted = rev.status === 'Completed';
+          return (
+            <div key={rev.id} className={`revision-item card ${isCompleted ? 'completed' : ''}`}>
+              <div className="rev-icon">
+                {isCompleted ? <MdCheckCircle /> : <MdCalendarToday />}
+              </div>
+              <div className="rev-info">
+                <h4 className={isCompleted ? 'strikethrough' : ''}>{rev.title}</h4>
+                <p>{rev.subject} • {rev.topic} • {format(new Date(rev.deadline), 'MMM dd')}</p>
+              </div>
+              <div className="rev-actions">
+                <button 
+                  className="action-btn edit" 
+                  onClick={(e) => { e.stopPropagation(); onEdit(rev); }}
+                  title="Edit Revision"
+                >
+                  <MdEdit />
+                </button>
+                <button 
+                  className="action-btn delete" 
+                  onClick={(e) => { e.stopPropagation(); onDelete(rev.id); }}
+                  title="Delete Revision"
+                >
+                  <MdDelete />
+                </button>
+                <button 
+                  className="rev-btn" 
+                  onClick={() => onAction(rev)} 
+                  title={isCompleted ? "Mark as Pending" : "Mark as Completed"}
+                >
+                  {isCompleted ? <MdCheckCircle color="#10b981" /> : <MdChevronRight />}
+                </button>
+              </div>
             </div>
-            <div className="rev-info">
-              <h4 className={rev.status === 'Completed' ? 'strikethrough' : ''}>{rev.title}</h4>
-              <p>{rev.subject} • {format(new Date(rev.deadline), 'MMM dd')}</p>
-            </div>
-            <button className="rev-btn" onClick={() => onAction(rev)} title={rev.status === 'Completed' ? "Mark as Pending" : "Mark as Completed"}>
-              {rev.status === 'Completed' ? <MdCheckCircle color="#10b981" /> : <MdChevronRight />}
-            </button>
-          </div>
-        ))
+          );
+        })
       ) : (
         <p className="empty-text">No revisions scheduled.</p>
       )}
@@ -71,6 +93,32 @@ const RevisionList = ({ revisions, onAction }) => {
           font-size: 0.8rem;
           color: var(--text-muted);
         }
+        .rev-actions {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          opacity: 0;
+          transition: var(--transition);
+        }
+        .revision-item:hover .rev-actions {
+          opacity: 1;
+        }
+        .action-btn {
+          background: transparent;
+          border: none;
+          color: var(--text-muted);
+          cursor: pointer;
+          font-size: 1.1rem;
+          padding: 0.25rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 4px;
+          transition: var(--transition);
+        }
+        .action-btn:hover { background: var(--glass); color: white; }
+        .action-btn.delete:hover { color: #ef4444; }
+
         .rev-btn {
           background: transparent;
           border: none;
@@ -78,6 +126,7 @@ const RevisionList = ({ revisions, onAction }) => {
           font-size: 1.5rem;
           cursor: pointer;
           transition: var(--transition);
+          margin-left: 0.5rem;
         }
         .rev-btn:hover {
           color: var(--primary);
