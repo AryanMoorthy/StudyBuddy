@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { motion, AnimatePresence } from 'framer-motion';
 import { generateStudyMaterial } from '../services/aiService';
 import { useSubjects } from '../hooks/useSubjects';
 import { 
@@ -15,6 +16,7 @@ import { toast } from 'react-toastify';
 const FlashcardViewer = ({ data }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [direction, setDirection] = useState(0);
 
   let cards = [];
   try {
@@ -26,33 +28,95 @@ const FlashcardViewer = ({ data }) => {
   if (!Array.isArray(cards) || cards.length === 0) return <p>No flashcards generated.</p>;
 
   const handleNext = () => {
+    setDirection(1);
     setIsFlipped(false);
-    setTimeout(() => setCurrentIndex(prev => (prev + 1) % cards.length), 150);
+    setCurrentIndex(prev => (prev + 1) % cards.length);
   };
 
   const handlePrev = () => {
+    setDirection(-1);
     setIsFlipped(false);
-    setTimeout(() => setCurrentIndex(prev => (prev - 1 + cards.length) % cards.length), 150);
+    setCurrentIndex(prev => (prev - 1 + cards.length) % cards.length);
+  };
+
+  const variants = {
+    enter: (direction) => ({
+      x: direction > 0 ? 300 : -300,
+      opacity: 0,
+      rotateY: isFlipped ? 180 : 0
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1,
+      rotateY: isFlipped ? 180 : 0
+    },
+    exit: (direction) => ({
+      zIndex: 0,
+      x: direction < 0 ? 300 : -300,
+      opacity: 0,
+      rotateY: isFlipped ? 180 : 0
+    })
+  };
+
+  const swipeConfidenceThreshold = 10000;
+  const swipePower = (offset, velocity) => {
+    return Math.abs(offset) * velocity;
   };
 
   return (
     <div className="flashcard-container">
-      <div className={`flashcard ${isFlipped ? 'flipped' : ''}`} onClick={() => setIsFlipped(!isFlipped)}>
-        <div className="flashcard-inner">
-          <div className="flashcard-front">
-            <h4>Concept {currentIndex + 1}</h4>
-            <p>{cards[currentIndex].front}</p>
-            <span className="flip-hint"><MdAutorenew /> Click to flip</span>
-          </div>
-          <div className="flashcard-back">
-            <h4>Definition</h4>
-            <p>{cards[currentIndex].back}</p>
-          </div>
-        </div>
+      <div className="flashcard-viewport">
+        <AnimatePresence initial={false} custom={direction}>
+          <motion.div
+            key={currentIndex}
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{
+              x: { type: "spring", stiffness: 300, damping: 30, restDelta: 0.001 },
+              opacity: { duration: 0.2 },
+              rotateY: { duration: 0.4 }
+            }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={1}
+            onDragEnd={(e, { offset, velocity }) => {
+              const swipe = swipePower(offset.x, velocity.x);
+
+              if (swipe < -swipeConfidenceThreshold) {
+                handleNext();
+              } else if (swipe > swipeConfidenceThreshold) {
+                handlePrev();
+              }
+            }}
+            className={`flashcard ${isFlipped ? 'flipped' : ''}`}
+            onClick={() => setIsFlipped(!isFlipped)}
+          >
+            <div className="flashcard-inner">
+              <div className="flashcard-front">
+                <h4>Concept {currentIndex + 1}</h4>
+                <div className="card-text-container">
+                  <p>{cards[currentIndex].front}</p>
+                </div>
+                <span className="flip-hint"><MdAutorenew /> Click to flip</span>
+              </div>
+              <div className="flashcard-back">
+                <h4>Definition</h4>
+                <div className="card-text-container">
+                  <p>{cards[currentIndex].back}</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
+
       <div className="flashcard-controls">
         <button className="nav-btn" onClick={handlePrev}>Previous</button>
-        <span>{currentIndex + 1} / {cards.length}</span>
+        <span className="counter">{currentIndex + 1} / {cards.length}</span>
         <button className="nav-btn" onClick={handleNext}>Next</button>
       </div>
     </div>
@@ -299,18 +363,35 @@ const AITools = () => {
         .empty-result { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); gap: 1rem; }
 
         /* Flashcard Styles */
-        .flashcard-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 500px; padding: 1rem; }
-        .flashcard { width: 100%; max-width: 800px; height: 450px; perspective: 1000px; cursor: pointer; margin-bottom: 2rem; }
-        .flashcard-inner { width: 100%; height: 100%; position: relative; transition: transform 0.6s; transform-style: preserve-3d; }
+        .flashcard-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 550px; padding: 1rem; position: relative; }
+        .flashcard-viewport { width: 100%; max-width: 800px; height: 450px; position: relative; margin-bottom: 3rem; display: flex; align-items: center; justify-content: center; }
+        .flashcard { width: 100%; height: 100%; perspective: 1000px; cursor: pointer; position: absolute; touch-action: none; }
+        .flashcard-inner { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); transform-style: preserve-3d; }
         .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
-        .flashcard-front, .flashcard-back { width: 100%; height: 100%; position: absolute; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
-        .flashcard-back { transform: rotateY(180deg); background: rgba(99, 102, 241, 0.1); border-color: var(--primary); }
-        .flashcard h4 { color: var(--primary); margin-bottom: 1.5rem; font-size: 1.5rem; }
-        .flashcard p { font-size: 1.4rem; line-height: 1.6; }
-        .flip-hint { position: absolute; bottom: 1rem; font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; }
-        .flashcard-controls { display: flex; align-items: center; gap: 2rem; }
-        .nav-btn { padding: 0.5rem 1.5rem; background: var(--glass); border: 1px solid var(--border); border-radius: 8px; color: white; cursor: pointer; transition: all 0.2s; }
-        .nav-btn:hover { background: var(--primary); border-color: var(--primary); }
+        .flashcard-front, .flashcard-back { width: 100%; height: 100%; position: absolute; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); overflow: hidden; }
+        .flashcard-back { transform: rotateY(180deg); background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-color: var(--primary); }
+        .flashcard-front { padding: 2rem; justify-content: center; }
+        .flashcard-back { padding: 2rem; justify-content: center; }
+        
+        .card-text-container { width: 100%; flex: 1; display: flex; align-items: center; justify-content: center; overflow-y: auto; padding: 0.5rem; scrollbar-width: thin; scrollbar-color: var(--primary) transparent; }
+        .card-text-container::-webkit-scrollbar { width: 4px; }
+        .card-text-container::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+
+        .flashcard h4 { color: var(--primary); margin-bottom: 1rem; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
+        .flashcard p { font-size: 1.6rem; line-height: 1.4; color: white; white-space: pre-wrap; margin: 0; }
+        
+        .flip-hint { margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; }
+        .flashcard-controls { display: flex; align-items: center; gap: 2rem; z-index: 10; }
+        .nav-btn { padding: 0.75rem 2rem; background: var(--glass); border: 1px solid var(--border); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-weight: 600; }
+        .nav-btn:hover { background: var(--primary); border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+        .counter { font-family: monospace; font-size: 1.1rem; color: var(--text-muted); font-weight: 600; }
+
+        @media (max-width: 640px) {
+          .flashcard-viewport { height: 400px; margin-bottom: 2rem; }
+          .flashcard p { font-size: 1.25rem; }
+          .flashcard h4 { font-size: 0.9rem; }
+          .nav-btn { padding: 0.6rem 1.25rem; font-size: 0.9rem; }
+        }
 
         /* Quiz Styles */
         .quiz-container { padding: 1rem; max-width: 800px; margin: 0 auto; }
