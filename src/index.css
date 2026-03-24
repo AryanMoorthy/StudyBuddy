@@ -131,7 +131,7 @@ body {
   z-index: 900;
 }
 
-.menu-btn, .mobile-close {
+.menu-btn {
   background: transparent;
   border: none;
   color: white;
@@ -140,10 +140,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.mobile-header {
-  display: flex !important;
 }
 
 .sidebar-overlay {
