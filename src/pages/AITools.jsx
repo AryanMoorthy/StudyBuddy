@@ -43,19 +43,17 @@ const FlashcardViewer = ({ data }) => {
     enter: (direction) => ({
       x: direction > 0 ? 300 : -300,
       opacity: 0,
-      rotateY: isFlipped ? 180 : 0
+      opacity: 0
     }),
     center: {
       zIndex: 1,
       x: 0,
-      opacity: 1,
-      rotateY: isFlipped ? 180 : 0
+      opacity: 1
     },
     exit: (direction) => ({
       zIndex: 0,
       x: direction < 0 ? 300 : -300,
-      opacity: 0,
-      rotateY: isFlipped ? 180 : 0
+      opacity: 0
     })
   };
 

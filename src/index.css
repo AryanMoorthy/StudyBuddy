@@ -50,7 +50,7 @@ body {
 }
 
 .sidebar {
-  width: 220px;
+  width: 320px; /* Optimized Width */
   background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
   border-right: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
@@ -64,28 +64,24 @@ body {
 }
 
 .sidebar-header {
-  padding: 2rem 1.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
+  padding: 2rem 2.5rem;
+  margin-bottom: 0px; 
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.25rem;
   font-weight: 800;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   color: white;
 }
 
-.logo span {
-  background: linear-gradient(to right, #6366f1, #ec4899);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.logo svg {
+  color: var(--primary);
+  filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.4));
+  font-size: 2.5rem;
 }
 
 .nav-links {
@@ -98,14 +94,26 @@ body {
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1.25rem 1.5rem;
-  color: var(--text-muted);
+  flex-direction: row-reverse; /* Icon First (JSX is Label-Icon) */
+  justify-content: flex-end; 
+  gap: 1.75rem; 
+  padding: 1.5rem 2.5rem;
+  color: #94a3b8;
   text-decoration: none;
   border-radius: 12px;
-  transition: var(--transition);
-  font-weight: 500;
+  transition: all 0.3s ease;
+  font-weight: 700;
+  font-size: 1.3rem; 
+  margin: 0.25rem 1rem;
   cursor: pointer;
+}
+
+.nav-link span {
+  flex: 1;
+}
+
+.nav-link svg {
+  font-size: 2rem;
 }
 
 .nav-link:hover {
@@ -197,13 +205,15 @@ body {
     position: fixed !important;
     height: 100vh !important;
     height: 100dvh !important;
-    left: -220px !important;
+    left: -360px !important;
     top: 0 !important;
     z-index: 999999 !important;
     box-shadow: 20px 0 50px rgba(0,0,0,0.5);
-    width: 220px !important;
+    width: 320px !important;
     visibility: hidden;
     pointer-events: none;
+    padding-top: 3rem;
+    align-items: flex-start !important;
   }
 
   .sidebar.open {
@@ -212,14 +222,78 @@ body {
     pointer-events: auto;
   }
 
+  .sidebar-header {
+    border-bottom: none;
+    margin-bottom: 2rem;
+    justify-content: flex-start !important;
+    padding: 0 1.5rem !important;
+    width: 100% !important;
+  }
+
+  .logo {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+
+  .logo svg {
+    font-size: 5rem !important;
+    color: var(--primary) !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .logo span {
+    font-size: 2.1rem !important;
+    font-weight: 800 !important;
+    color: white !important;
+    display: block !important;
+    margin: 0 !important;
+  }
+
+  .nav-links {
+    width: 100% !important;
+    padding: 0 1.5rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important; /* Force to the LEFT */
+    margin: 0 !important;
+  }
+
+  .nav-link {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    gap: 1.25rem !important;
+    font-size: 1.3rem !important;
+    padding: 1.1rem 1.5rem !important;
+    margin: 0.5rem 0 !important; /* Flush left */
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    width: 100% !important;
+    border-radius: 12px !important;
+    color: white !important;
+  }
+
+  .nav-link span {
+    display: block !important;
+    color: white !important;
+    font-weight: 700 !important;
+    text-align: left !important;
+    flex: none !important;
+  }
+
+  .nav-link svg {
+    font-size: 1.8rem !important;
+    color: var(--primary) !important;
+    flex: none !important;
+  }
+
   .mobile-header {
     display: flex !important;
   }
-  
-  .mobile-close {
-    display: flex !important;
-  }
-  
+
   .sidebar-overlay.active {
     display: block !important;
   }

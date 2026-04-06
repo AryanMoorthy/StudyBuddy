@@ -89,7 +89,9 @@ const Dashboard = () => {
         </div>
 
         <div className="card revision-section">
-          <h3>Upcoming Revisions</h3>
+          <div className="section-header">
+            <h3>Upcoming Revisions</h3>
+          </div>
           <RevisionList 
             revisions={upcomingRevisions.slice(0, 5)} 
             onAction={(task) => updateTask(task.id, { status: task.status === 'Completed' ? 'Revision' : 'Completed' })}

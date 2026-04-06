@@ -1,4 +1,4 @@
-import { MdCalendarToday, MdChevronRight, MdCheckCircle, MdEdit, MdDelete } from 'react-icons/md';
+import { MdCalendarToday, MdChevronRight, MdCheckCircle, MdEdit, MdDelete, MdSchool, MdTopic } from 'react-icons/md';
 import { format } from 'date-fns';
 
 const RevisionList = ({ revisions, onAction, onEdit, onDelete }) => {
@@ -14,7 +14,11 @@ const RevisionList = ({ revisions, onAction, onEdit, onDelete }) => {
               </div>
               <div className="rev-info">
                 <h4 className={isCompleted ? 'strikethrough' : ''}>{rev.title}</h4>
-                <p>{rev.subject} • {rev.topic} • {format(new Date(rev.deadline), 'MMM dd')}</p>
+                <div className="rev-meta">
+                  <span className="meta-item"><MdSchool /> {rev.subject}</span>
+                  <span className="meta-item"><MdTopic /> {rev.topic}</span>
+                  <span className="meta-item"><MdCalendarToday /> {format(new Date(rev.deadline), 'MMM dd')}</span>
+                </div>
               </div>
               <div className="rev-actions">
                 <button 
@@ -82,16 +86,34 @@ const RevisionList = ({ revisions, onAction, onEdit, onDelete }) => {
           flex: 1;
         }
         .rev-info h4 {
-          font-size: 0.95rem;
-          margin-bottom: 0.2rem;
+          font-size: 1.1rem;
+          font-weight: 700;
+          margin-bottom: 0.5rem;
+          color: white;
         }
         .strikethrough {
           text-decoration: line-through;
           color: var(--text-muted);
         }
-        .rev-info p {
+        .rev-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+        }
+        .meta-item {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
           font-size: 0.8rem;
           color: var(--text-muted);
+          background: rgba(255, 255, 255, 0.03);
+          padding: 2px 8px;
+          border-radius: 6px;
+          white-space: nowrap;
+        }
+        .meta-item svg {
+          color: var(--primary);
+          font-size: 0.9rem;
         }
         .rev-actions {
           display: flex;
