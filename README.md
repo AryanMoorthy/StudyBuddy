@@ -39,8 +39,8 @@ Then open **https://study-buddy-one-omega.vercel.app/** in your browser.
 ### 📊 Dashboard (`/dashboard`)
 - Overview of all study statistics (total, completed, pending, revision tasks)
 - Subject-wise progress bar chart powered by **Recharts**
-- Upcoming revision reminders panel
-- Fully responsive 4-column stats grid
+- **Redesigned Revision Panel**: Premium cards with icon-based metadata (Subject, Topic, Date) for at-a-glance scanning
+- Fully responsive 4-column stats grid with glassmorphism effects
 
 ### 📖 Subject Management (`/subjects`)
 - Create subjects with custom **color labels** and descriptions
@@ -69,6 +69,7 @@ Then open **https://study-buddy-one-omega.vercel.app/** in your browser.
   - ❓ **Practice Quiz** — 5 questions with answers
   - 🃏 **Flashcards** — 5 Q&A cards for spaced repetition
 - Results rendered as **formatted Markdown** (bold, headings, lists, dividers)
+- **Interactive Flashcards**: Premium 3D-flipping cards for an immersive study experience
 - One-click copy to clipboard
 
 ---
@@ -161,9 +162,9 @@ All data (subjects, topics, tasks) is stored in the browser's **localStorage**, 
 
 | Breakpoint | Layout |
 |-----------|--------|
-| > 1024px | Full sidebar + multi-column grids |
-| 768–1024px | Collapsed icon-only sidebar |
-| < 768px | Bottom navigation bar, single-column layout |
+| > 1024px | **Optimized Sidebar (320px)** — maximum visibility with single-line text |
+| < 1024px | **Responsive Drawer** — hidden by default, accessible via menu button |
+| < 768px | **Mobile-Optimized** — single-column layout with touch-friendly controls |
 
 ---
 
