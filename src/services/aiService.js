@@ -98,29 +98,31 @@ export const generateStudyMaterial = async (topic, prompt, retryCount = 0, useSe
   } catch (error) {
     const status = error.response?.status;
     const message = error.response?.data?.error?.message || error.message;
-    const isQuota = status === 429 || message.toLowerCase().includes('quota');
+    
+    // 1. Identify Service Interruption (Quota or Server Error)
+    const isBusy = status === 429 || (status >= 500 && status <= 504) || message.toLowerCase().includes('quota');
 
-    // 1. Failover: If primary key fails with quota, try secondary key immediately
-    if (isQuota && !useSecondary && SECONDARY_KEY) {
-      console.warn('Primary AI Quota Exceeded. Rotating to Secondary Key...');
+    // 2. Failover: If primary fails with ANY service disruption, try secondary key
+    if (isBusy && !useSecondary && SECONDARY_KEY) {
+      console.warn(`Primary AI Channel (${status}). Rotating to Secondary Key...`);
       return generateStudyMaterial(topic, prompt, 0, true);
     }
 
-    // 2. Exponential Backoff: Only if the current key is active and failing
-    if (status === 429 && retryCount < 2) {
-      const delay = Math.pow(4, retryCount) * 500;
-      console.warn(`Gemini Quota Hit (${useSecondary ? 'Secondary' : 'Primary'}). Retrying in ${delay}ms...`);
+    // 3. Exponential Backoff: Retry on transient 429 or 5xx errors
+    if ((status === 429 || (status >= 500 && status <= 504)) && retryCount < 2) {
+      const delay = Math.pow(4, retryCount) * 800; // Slightly longer delay for server issues
+      console.warn(`Gemini Service Busy (${status}). Retrying in ${delay}ms... (Attempt ${retryCount + 1})`);
       await sleep(delay);
       return generateStudyMaterial(topic, prompt, retryCount + 1, useSecondary);
     }
 
-    // 3. Final Failure: If both failed or non-quota error
+    // 4. Final Failure: If both failed or non-service error
     console.error('Gemini API Error Context:', error);
-    const enhancedError = new Error(isQuota 
-      ? 'All AI channels are currently busy. Activating local synthetic engine.' 
+    const enhancedError = new Error(isBusy 
+      ? 'Intelligence Cloud is currently at peak capacity. Local Synthetic Engine activating.' 
       : `AI Synthesis System: ${message}`
     );
-    enhancedError.isQuotaExceeded = isQuota;
+    enhancedError.isQuotaExceeded = isBusy; // We keep this flag name for compatibility with AITools.jsx
     throw enhancedError;
   }
 };

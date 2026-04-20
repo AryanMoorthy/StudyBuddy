@@ -286,8 +286,13 @@ export const StudyProvider = ({ children }) => {
     });
 
     if (upsertError) {
-      console.error("📊 Stats Engine: Database Write Failed!", upsertError);
-      toast.error("Intelligence Update Failed: Database Sync Error.");
+      console.error("📊 Stats Engine: Database Write Failed!", {
+        message: upsertError.message,
+        code: upsertError.code,
+        details: upsertError.details,
+        hint: upsertError.hint
+      });
+      toast.error(`Intelligence Sync Failed: ${upsertError.message || 'Database Error'}`);
       return;
     }
 

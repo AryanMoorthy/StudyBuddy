@@ -34,8 +34,14 @@ const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // 1. Loading Guard: Prevents rendering charts with null dimensions
-  if (loading) {
+  if (loading || !isMounted) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
          <div className="text-center space-y-4">
@@ -258,7 +264,7 @@ const Dashboard = () => {
             <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mastery % per Subject</div>
           </div>
           <div className="h-[300px] w-full min-h-[300px] relative">
-            <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={0}>
+            <ResponsiveContainer width="100%" height="99%" debounce={300} minWidth={0}>
               <BarChart data={subjectEfficiency || []} layout="vertical" margin={{ left: 40, right: 30 }}>
                 <XAxis type="number" hide domain={[0, 100]} />
                 <YAxis 
@@ -371,7 +377,7 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="h-[300px] w-full min-h-[300px] relative">
-            <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={0}>
+            <ResponsiveContainer width="100%" height="99%" debounce={300} minWidth={0}>
               <AreaChart data={stats?.trend || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">

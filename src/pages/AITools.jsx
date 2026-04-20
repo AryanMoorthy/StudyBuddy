@@ -566,24 +566,8 @@ const AITools = () => {
         setIsSimulationMode(false);
         toast.success('Strategy Augmented Successfully!');
       } catch (err) {
-        if (err.isQuotaExceeded) {
-          toast.warning('Intelligence Cloud busy. Activating Synthetic Engine.');
-          setIsSimulationMode(true);
-          
-          // Direct fallback to mock logic to avoid stale state/infinite loops
-          setLoadMessage('Switching to Synthetic Engine...');
-          await new Promise(r => setTimeout(r, 1200));
-          
-          let mockData;
-          if (activeTool === 'summary') mockData = mockService.generateSummary(selectedTopic.name);
-          if (activeTool === 'flashcards') mockData = mockService.generateFlashcards(selectedTopic.name);
-          if (activeTool === 'questions') mockData = mockService.generateQuestions(selectedTopic.name, finalCount);
-          
-          setResult(mockData);
-          toast.info('Synthesizing using Local Logic Engine');
-        } else {
-          toast.error(err.message || 'AI synthesis failed. Power down and restart.');
-        }
+        toast.error(err.message || 'AI synthesis failed. Your credits may be low or the service is temporarily busy.');
+        // Automatic fallback to Simulation Mode removed as per user request.
       }
     } finally {
       setLoading(false);
