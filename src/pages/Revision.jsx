@@ -1,309 +1,238 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useMemo } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { useTasks } from '../hooks/useTasks';
-import RevisionList from '../components/RevisionList';
+import { StudyContext } from '../context/StudyContext';
+import { 
+  Calendar as CalendarIcon, 
+  CheckCircle2, 
+  Play,
+  RotateCcw,
+  Target,
+  ArrowRight,
+  X,
+  Zap
+} from 'lucide-react';
 import { format, isSameDay } from 'date-fns';
-import { MdEventNote, MdAdd, MdClose, MdTopic, MdAccessTime, MdFilterList, MdAssignment } from 'react-icons/md';
-import { useSubjects } from '../hooks/useSubjects';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 
 const Revision = () => {
-  const { tasks, updateTask, addTask } = useTasks();
-  const { subjects, topics } = useSubjects();
+  const { subjects, topics, recordStudySession } = useContext(StudyContext);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showModal, setShowModal] = useState(false);
-  const [editingRevision, setEditingRevision] = useState(null);
-  const [newRevision, setNewRevision] = useState({ title: '', subject: '', topic: '', deadline: format(new Date(), 'yyyy-MM-dd'), priority: 'Medium' });
+  const [activeSessionTopic, setActiveSessionTopic] = useState(null);
 
-  const revisionTasks = tasks.filter(t => t.status === 'Revision' || t.isRevision);
-  const tasksOnSelectedDate = revisionTasks.filter(t => isSameDay(new Date(t.deadline), selectedDate));
-
-  const handleAddRevision = (e) => {
-    e.preventDefault();
-    if (!newRevision.title || !newRevision.subject || !newRevision.topic || !newRevision.deadline) {
-      return toast.error('Please fill all required fields');
-    }
-    
-    if (editingRevision) {
-      updateTask(editingRevision.id, { ...newRevision, status: editingRevision.status });
-      toast.success('Revision updated!');
-    } else {
-      addTask({ ...newRevision, status: 'Revision', isRevision: true });
-      toast.success('Revision scheduled!');
-    }
-    handleCloseModal();
-  };
-
-  const handleEditRevision = (revision) => {
-    setEditingRevision(revision);
-    setNewRevision({
-      title: revision.title,
-      subject: revision.subject,
-      topic: revision.topic,
-      deadline: revision.deadline,
-      priority: revision.priority
+  const dueTopics = useMemo(() => {
+    return topics.filter(t => {
+      const nextReview = new Date(t.next_review);
+      return isSameDay(nextReview, selectedDate) || 
+             (isSameDay(selectedDate, new Date()) && nextReview < new Date());
     });
-    setShowModal(true);
-  };
+  }, [topics, selectedDate]);
 
-  const handleDeleteRevision = (id) => {
-    if (window.confirm('Are you sure you want to delete this revision?')) {
-      deleteTask(id);
-      toast.success('Revision deleted');
+  const handleRateSession = async (rating) => {
+    const { error } = await recordStudySession(activeSessionTopic.id, rating, 25);
+    if (!error) {
+      setActiveSessionTopic(null);
     }
   };
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setEditingRevision(null);
-    setNewRevision({ title: '', subject: '', topic: '', deadline: format(new Date(), 'yyyy-MM-dd'), priority: 'Medium' });
-  };
-
-  const tileClassName = ({ date, view }) => {
-    if (view === 'month') {
-      const dayRevisions = revisionTasks.filter(t => isSameDay(new Date(t.deadline), date));
-      if (dayRevisions.length > 0) {
-        const allDone = dayRevisions.every(t => t.status === 'Completed');
-        return allDone ? 'revisions-done' : 'has-revision';
-      }
-    }
-    return null;
+  const getDayClass = ({ date }) => {
+    const hasTopic = topics.some(t => isSameDay(new Date(t.next_review), date));
+    return hasTopic ? 'has-revision-indicator relative' : '';
   };
 
   return (
-    <div className="revision-page">
-      <header className="page-header">
+    <div className="space-y-10 animate-fade-in text-foreground">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1>Revision Planner</h1>
-          <p>Spaced repetition for better retention</p>
+          <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-foreground uppercase italic underline decoration-primary decoration-4 underline-offset-8">
+            Revision Engine
+          </h1>
+          <p className="text-muted-foreground mt-6 text-lg font-medium">Maximize retention with Spaced Repetition (SM-2).</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-          <MdAdd /> New Revision
-        </button>
+        <div className="flex items-center gap-4 bg-primary/5 border border-primary/10 px-6 py-3 rounded-2xl">
+          <Zap className="w-5 h-5 text-primary fill-primary/20" />
+          <div className="flex flex-col">
+            <span className="text-[10px] uppercase font-black tracking-widest text-primary">Daily Goal</span>
+            <span className="text-sm font-black text-foreground">{topics.filter(t => new Date(t.next_review) <= new Date()).length} Topics Due Today</span>
+          </div>
+        </div>
       </header>
 
-      <div className="planner-container">
-        <div className="calendar-card card">
-          <Calendar 
-            onChange={setSelectedDate} 
-            value={selectedDate}
-            tileClassName={tileClassName}
-          />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        {/* Calendar Selection Card */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="card-premium p-8 bg-card shadow-lg">
+            <h3 className="text-xl font-black text-foreground uppercase tracking-tight mb-6 flex items-center gap-2">
+              <CalendarIcon className="w-5 h-5 text-primary" /> Review Schedule
+            </h3>
+            <div className="premium-calendar">
+              <Calendar 
+                onChange={setSelectedDate} 
+                value={selectedDate}
+                className="rounded-2xl"
+                tileClassName={getDayClass}
+              />
+            </div>
+          </div>
+
+          <div className="card-premium p-8 bg-primary text-primary-foreground border-none shadow-premium relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-white/20 transition-all" />
+            <h4 className="text-xl font-black tracking-tighter mb-2">Power Hour</h4>
+            <p className="text-primary-foreground/80 text-sm font-medium leading-relaxed mb-6">
+              Concentrated revision session for high-priority topics due today. 
+            </p>
+            <button className="w-full bg-primary-foreground text-primary font-black uppercase tracking-widest text-xs py-4 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all">
+              Initialize System
+            </button>
+          </div>
         </div>
 
-        <div className="revision-details card">
-          <div className="details-header">
-            <MdEventNote />
-            <h3>Revisions for {format(selectedDate, 'MMMM dd, yyyy')}</h3>
+        {/* Study Portal */}
+        <div className="lg:col-span-8 flex flex-col gap-8">
+          <div className="card-premium p-10 bg-card overflow-hidden relative flex-1 min-h-[500px]">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-muted">
+              <motion.div 
+                className="h-full bg-primary shadow-[0_0_15px_rgba(139,92,246,0.5)]" 
+                initial={{ width: '0%' }}
+                animate={{ width: `${(topics.filter(t => t.repetitions > 0).length / Math.max(topics.length, 1)) * 100}%` }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between mb-12">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-muted rounded-xl flex items-center justify-center">
+                  <Play className="w-5 h-5 text-primary fill-primary/10" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-foreground tracking-tight">Active Portal</h3>
+                  <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">{format(selectedDate, 'MMMM dd, yyyy')}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Topics Pipeline</span>
+                <p className="text-2xl font-black text-foreground tracking-tighter">{dueTopics.length}</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {dueTopics.map((topic, i) => (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  key={topic.id}
+                  className="flex items-center gap-6 p-6 rounded-[2.5rem] bg-muted/20 border border-border hover:bg-muted/40 transition-all group"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-card border border-border flex items-center justify-center text-sm font-black text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all">
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">{subjects.find(s => s.id === topic.subject_id)?.name}</p>
+                    <h4 className="text-xl font-black text-foreground tracking-tight truncate">{topic.name}</h4>
+                  </div>
+                  <button 
+                    onClick={() => setActiveSessionTopic(topic)}
+                    className="px-6 py-3 bg-card border border-border rounded-xl font-black uppercase tracking-widest text-[10px] text-foreground hover:bg-primary hover:text-white hover:border-primary hover:shadow-premium transition-all"
+                  >
+                    Engage
+                  </button>
+                </motion.div>
+              ))}
+
+              {dueTopics.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-24 text-center">
+                  <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mb-6">
+                    <CheckCircle2 className="w-10 h-10 text-emerald-500/30" />
+                  </div>
+                  <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">Schedule Clear</h3>
+                  <p className="text-muted-foreground max-w-xs mt-2 font-medium">Select another date or relax. You're completely up to date!</p>
+                </div>
+              )}
+            </div>
           </div>
-          
-          <RevisionList 
-            revisions={tasksOnSelectedDate}
-            onAction={(task) => updateTask(task.id, { status: task.status === 'Completed' ? 'Revision' : 'Completed' })}
-            onEdit={handleEditRevision}
-            onDelete={handleDeleteRevision}
-          />
         </div>
       </div>
 
-      {showModal && (
-        <div className="modal-overlay">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="modal card premium-modal"
-          >
-            <div className="modal-header">
-              <div className="header-title">
-                <MdEventNote className="header-icon" />
-                <h2>{editingRevision ? 'Edit Revision' : 'Schedule Revision'}</h2>
-              </div>
-              <button className="close-btn" onClick={handleCloseModal}><MdClose /></button>
-            </div>
-
-            <form onSubmit={handleAddRevision} className="premium-form">
-              <div className="form-section">
-                <label><MdAssignment /> Revision Topic/Goal</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g., Active recall on Time Complexity"
-                  value={newRevision.title} 
-                  onChange={(e) => setNewRevision({...newRevision, title: e.target.value})} 
+      {/* High-Focus Study Session Modal */}
+      <AnimatePresence>
+        {activeSessionTopic && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveSessionTopic(null)}
+              className="absolute inset-0 bg-background/90 backdrop-blur-xl"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 50 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 50 }}
+              className="relative w-full max-w-4xl bg-card rounded-[4rem] shadow-2xl border border-border overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-muted overflow-hidden">
+                <motion.div 
+                  className="h-full bg-primary shadow-[0_0_15px_rgba(139,92,246,0.6)]"
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 1500, ease: 'linear' }}
                 />
               </div>
 
-              <div className="form-row">
-                <div className="form-section">
-                  <label><MdFilterList /> Subject</label>
-                  <select value={newRevision.subject} onChange={(e) => setNewRevision({...newRevision, subject: e.target.value, topic: ''})}>
-                    <option value="">Select Subject</option>
-                    {subjects.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-                  </select>
+              <div className="p-16 flex flex-col items-center text-center">
+                <button 
+                  onClick={() => setActiveSessionTopic(null)}
+                  className="absolute top-10 right-10 w-12 h-12 bg-muted/50 rounded-full flex items-center justify-center hover:bg-muted text-foreground transition-all"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+
+                <div className="mb-12">
+                   <div className="w-24 h-24 bg-primary/10 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-premium">
+                      <Target className="w-12 h-12 text-primary" />
+                   </div>
+                   <p className="text-xs font-black uppercase tracking-[0.4em] text-primary mb-4 text-primary">Internal Focus Engine</p>
+                   <h2 className="text-6xl font-black text-foreground tracking-tighter leading-none mb-6">{activeSessionTopic.name}</h2>
+                   <div className="flex items-center justify-center gap-3">
+                     <span className="bg-muted px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-muted-foreground">Repetition #{activeSessionTopic.repetitions}</span>
+                     <span className="bg-muted px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-muted-foreground">SM-2 Optimized</span>
+                   </div>
                 </div>
-                <div className="form-section">
-                  <label><MdTopic /> Topic</label>
-                  <select value={newRevision.topic} onChange={(e) => setNewRevision({...newRevision, topic: e.target.value})}>
-                    <option value="">Select Topic</option>
-                    {topics.filter(t => t.subjectId === subjects.find(s => s.name === newRevision.subject)?.id).map(t => (
-                      <option key={t.id} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
+
+                <div className="w-full max-w-2xl space-y-12">
+                   <div className="space-y-4">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Self-Assessment Performance</h3>
+                      <div className="flex justify-between items-center gap-4">
+                        {[
+                          { val: 1, color: 'hover:bg-rose-500', label: 'Forgotten' },
+                          { val: 2, color: 'hover:bg-orange-500', label: 'Struggled' },
+                          { val: 3, color: 'hover:bg-amber-500', label: 'Average' },
+                          { val: 4, color: 'hover:bg-emerald-500', label: 'Good' },
+                          { val: 5, color: 'hover:bg-primary', label: 'Perfect' }
+                        ].map((r) => (
+                           <button
+                            key={r.val}
+                            onClick={() => handleRateSession(r.val)}
+                            className={`flex-1 h-20 rounded-3xl bg-muted text-2xl font-black text-muted-foreground transition-all group relative ${r.color} hover:text-white hover:shadow-lg hover:-translate-y-2`}
+                           >
+                             {r.val}
+                             <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-[9px] font-black uppercase tracking-widest text-muted-foreground w-full">
+                               {r.label}
+                             </span>
+                           </button>
+                        ))}
+                      </div>
+                   </div>
+
+                   <p className="text-muted-foreground font-medium italic text-sm pt-8">
+                     "Assessment updates the Spaced Repetition interval for this topic."
+                   </p>
                 </div>
               </div>
-
-              <div className="form-row">
-                <div className="form-section">
-                  <label><MdAccessTime /> Revision Date</label>
-                  <input type="date" value={newRevision.deadline} onChange={(e) => setNewRevision({...newRevision, deadline: e.target.value})} />
-                </div>
-              </div>
-
-              <div className="modal-footer">
-                <button type="button" className="btn btn-outline" onClick={handleCloseModal}>Discard</button>
-                <button type="submit" className="btn btn-primary btn-glow">{editingRevision ? 'Update' : 'Schedule'}</button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
-      )}
-
-      <style jsx>{`
-        .revision-page { display: flex; flex-direction: column; gap: 2rem; }
-        .page-header { display: flex; justify-content: space-between; align-items: center; }
-        .planner-container { display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem; align-items: start; }
-        
-        /* Modal Styles (Reused from Tasks for consistency) */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .premium-modal { width: 90%; max-width: 650px; padding: 0; background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95)); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
-        .modal-header { padding: 1.5rem 2rem; background: rgba(255, 255, 255, 0.03); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .header-title { display: flex; align-items: center; gap: 0.75rem; }
-        .header-icon { color: var(--primary); font-size: 1.5rem; }
-        .close-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.5rem; }
-
-        .premium-form { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
-        .form-section { display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
-        .form-section label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; }
-        .form-section input, .form-section select { background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem; color: white; outline: none; }
-        .form-row { display: flex; gap: 1.5rem; }
-        .modal-footer { margin-top: 1rem; display: flex; justify-content: flex-end; gap: 1rem; }
-        .btn-glow:hover { box-shadow: 0 0 15px rgba(99, 102, 241, 0.5); }
-        
-        .calendar-card { 
-          padding: 2rem; 
-          background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.7));
-          border-radius: var(--radius);
-          border: 1px solid var(--border);
-          box-shadow: var(--shadow);
-        }
-        .revision-details { min-height: 400px; padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
-        .details-header { display: flex; align-items: center; gap: 0.75rem; color: var(--primary); }
-        .details-header h3 { color: var(--text-main); margin: 0; font-size: 1.25rem; }
-
-        /* Custom Calendar Overrides - Premium Dark Theme */
-        :global(.react-calendar) {
-          background: transparent !important;
-          border: none !important;
-          width: 100% !important;
-          color: var(--text-main) !important;
-          font-family: inherit !important;
-        }
-        :global(.react-calendar__navigation) {
-          margin-bottom: 2rem !important;
-          display: flex;
-          gap: 0.5rem;
-        }
-        :global(.react-calendar__navigation button) {
-          color: white !important;
-          min-width: 44px !important;
-          background: rgba(255, 255, 255, 0.05) !important;
-          border-radius: 8px !important;
-          font-weight: 600 !important;
-        }
-        :global(.react-calendar__navigation button:enabled:hover) {
-          background: var(--primary) !important;
-        }
-        :global(.react-calendar__month-view__weekdays) {
-          text-align: center !important;
-          text-transform: uppercase !important;
-          font-weight: 800 !important;
-          font-size: 0.75rem !important;
-          color: var(--text-muted) !important;
-          padding-bottom: 1rem !important;
-        }
-        :global(.react-calendar__month-view__weekdays__weekday abbr) {
-          text-decoration: none !important;
-        }
-        :global(.react-calendar__tile) {
-          color: rgba(255, 255, 255, 0.75) !important;
-          padding: 1.5rem 0.5rem !important;
-          background: rgba(15, 23, 42, 0.6) !important;
-          border-radius: 12px !important;
-          transition: var(--transition) !important;
-          font-weight: 500 !important;
-          position: relative;
-        }
-        :global(.react-calendar__tile:enabled:hover) {
-          background: rgba(99, 102, 241, 0.25) !important;
-          color: white !important;
-        }
-        :global(.react-calendar__tile--now) {
-          background: rgba(99, 102, 241, 0.15) !important;
-          color: var(--primary) !important;
-          font-weight: 800 !important;
-          font-size: 1.1rem !important;
-        }
-        :global(.react-calendar__tile--active) {
-          background: var(--primary) !important;
-          color: white !important;
-          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4) !important;
-        }
-        :global(.react-calendar__month-view__days__day--neighboringMonth) {
-          opacity: 0.1 !important;
-          pointer-events: none !important;
-        }
-        :global(.react-calendar__month-view__days__day--neighboringMonth.react-calendar__month-view__days__day--weekend) {
-          color: inherit !important;
-          opacity: 0.05 !important;
-        }
-        
-        :global(.has-revision) {
-          color: var(--secondary) !important;
-          font-weight: 700 !important;
-        }
-        :global(.has-revision::after) {
-          content: '';
-          position: absolute;
-          bottom: 12px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 5px;
-          height: 5px;
-          background: var(--secondary);
-          border-radius: 50%;
-          box-shadow: 0 0 8px var(--secondary);
-        }
-
-        :global(.revisions-done) {
-          color: #10b981 !important;
-          font-weight: 700 !important;
-        }
-        :global(.revisions-done::after) {
-          content: '✓';
-          position: absolute;
-          bottom: 10px;
-          left: 50%;
-          transform: translateX(-50%);
-          font-size: 0.7rem;
-          color: #10b981;
-        }
-
-        @media (max-width: 1024px) {
-          .planner-container { grid-template-columns: 1fr; }
-        }
-      `}</style>
-
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

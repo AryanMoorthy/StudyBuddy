@@ -1,174 +1,111 @@
-# 📚 StudyBuddy — AI Powered Study Companion
+# 📚 StudyBuddy — AI-Augmented Intelligence Portal
 
-> A fully-featured, React-based study management system with AI-powered learning assistance, built as part of the Scaler curriculum.
+[![React](https://img.shields.io/badge/React-18-blue?logo=react)](https://reactjs.org/)
+[![PostgreSQL](https://img.shields.io/badge/Database-Supabase-green?logo=supabase)](https://supabase.com/)
+[![AI](https://img.shields.io/badge/AI-Gemini_2.5_Flash-orange?logo=google-gemini)](https://aistudio.google.com/)
+[![License](https://img.shields.io/badge/License-MIT-purple)](LICENSE)
 
----
-
-## 🚀 Live Demo
-
-Run locally with:
-```bash
-npm install
-npm run dev
-```
-Then open **https://study-buddy-one-omega.vercel.app/** in your browser.
+> **StudyBuddy** is a high-fidelity, neuro-scientific study management system. It merges modern UI/UX principles with the **SM-2 Spaced Repetition Algorithm** and **Generative AI** to transform passive learning into an active mastery loop.
 
 ---
 
-## 🏗️ Tech Stack
+## 🧠 The Intellectual Core
 
-| Category | Technology |
-|----------|-----------|
-| Framework | React 18 (Vite) |
-| Routing | React Router DOM v6 |
-| State Management | Context API + Custom Hooks |
-| AI Integration | Google Gemini 2.5 Flash |
-| Charts | Recharts |
-| Calendar | React Calendar |
-| Animations | Framer Motion |
-| HTTP Client | Axios |
-| Notifications | React Toastify |
-| Date Utilities | date-fns |
-| Icons | React Icons (Material Design) |
-| Styling | Vanilla CSS (Dark Glassmorphism Theme) |
+Most study tools are static lists. **StudyBuddy** is a dynamic engine that evolves with your brain's retention patterns.
+
+### 🌓 1. SM-2 Spaced Repetition Engine
+Integrated into the **Revision Engine**, the SM-2 algorithm calculates exactly when you'll forget a topic. 
+- **Dynamic Intervals**: Based on your self-assessment (1-5), the system schedules the next review between 1 to 30 days.
+- **Easiness Factor (EF)**: Every topic carries an internal "EF" that shifts based on how easily you recall the material, ensuring "Hard" topics appear significantly more often than "Easy" ones.
+
+### 🚨 2. Proprietary Mistake Mastery Loop
+The **AI Intelligence Portal** doesn't just give you answers; it captures your logical flaws.
+- **Automatic Persistence**: Incorrectly answered quiz questions are instantly moved to a persistent **Mistakes Queue** in Supabase.
+- **Verification Threshold**: A question is only retired from your practice queue after **two consecutive correct attempts**, ensuring true mastery rather than a lucky guess.
 
 ---
 
-## ✨ Features
+## 🚀 Core Pillars
 
-### 📊 Dashboard (`/dashboard`)
-- Overview of all study statistics (total, completed, pending, revision tasks)
-- Subject-wise progress bar chart powered by **Recharts**
-- **Redesigned Revision Panel**: Premium cards with icon-based metadata (Subject, Topic, Date) for at-a-glance scanning
-- Fully responsive 4-column stats grid with glassmorphism effects
+### 📊 Tactical Dashboard
+A high-level command center providing a holistic view of your academic progress.
+- **Real-time Analytics**: Mastery trends and subject-wise progress bars powered by `recharts`.
+- **Active Pipeline**: High-priority topics due for revision are surfaced instantly.
 
-### 📖 Subject Management (`/subjects`)
-- Create subjects with custom **color labels** and descriptions
-- Add nested **topics** per subject with difficulty levels (Easy / Medium / Hard)
-- Topic status tracking: **Not Started → In Progress → Completed → Needs Revision**
-- Delete subjects (automatically removes all associated topics)
+### ✅ Study Tasks & Focus Areas
+A granular planning tool to define your daily study targets.
+- **Fluid Toggles**: Mark tasks as "Mastered" or "Reviewed" with one tap.
+- **Metadata Tagging**: Categorize topics by difficulty and subject to filter your focus.
 
-### ✅ Task Management (`/tasks`)
-- Create study tasks with subject, topic, deadline, and priority
-- **Tabbed view**: All · Pending · Completed · Overdue · Revision
-- Priority selector with colour-coded buttons (🟢 Low · 🟡 Medium · 🔴 High)
-- Search bar with real-time filtering
-- Filter by subject and priority
-- Toggle task completion status in one click
-
-### 🗓️ Revision Planner (`/revision`)
-- Interactive dark-themed calendar (react-calendar)
-- Revision sessions displayed per selected date
-- Magenta dot indicator on days with scheduled revisions
-- Click a revision to mark it as completed
-
-### 🤖 AI Study Assistant (`/ai-tools`)
-- Powered by **Google Gemini 2.5 Flash**
-- Generate content for any of your topics:
-  - 📝 **Topic Summary** — condensed bullet-point review
-  - ❓ **Practice Quiz** — 5 questions with answers
-  - 🃏 **Flashcards** — 5 Q&A cards for spaced repetition
-- Results rendered as **formatted Markdown** (bold, headings, lists, dividers)
-- **Interactive Flashcards**: Premium 3D-flipping cards for an immersive study experience
-- One-click copy to clipboard
+### 🤖 AI Intelligence Portal
+Augment your study materials using the world's most advanced synthetic reasoning.
+- **Flashcard Synthesis**: Generate 3D-flipping cards for active recall.
+- **Logic Assessments**: Take AI-generated quizzes with deep explanatory feedback.
+- **Topic Distillation**: Create structured markdown summaries of complex topics in seconds.
 
 ---
 
-## 🗂️ Project Structure
+## 🎨 Design System: "Obsidian Glass"
 
-```
-src/
-├── components/
-│   ├── Layout.jsx          # Sidebar + Outlet wrapper
-│   ├── SearchBar.jsx       # Reusable search input
-│   ├── SubjectCard.jsx     # Subject display card
-│   ├── TaskCard.jsx        # Task display card with status toggle
-│   ├── ProgressChart.jsx   # Recharts bar/pie chart wrapper
-│   └── RevisionList.jsx    # Revision items list
-├── pages/
-│   ├── Dashboard.jsx       # /dashboard
-│   ├── Subjects.jsx        # /subjects
-│   ├── Tasks.jsx           # /tasks
-│   ├── Revision.jsx        # /revision
-│   └── AITools.jsx         # /ai-tools
-├── context/
-│   └── StudyContext.jsx    # Global state (subjects, topics, tasks)
-├── hooks/
-│   ├── useTasks.js         # Task CRUD + categorization
-│   ├── useSubjects.js      # Subject & topic CRUD
-│   ├── useProgress.js      # Analytics calculations
-│   └── useDebounce.js      # Search debouncing
-├── services/
-│   └── aiService.js        # Gemini API integration
-├── utils/
-│   └── helpers.js          # Shared utility functions
-└── styles/
-    └── global.css          # Design system + dark theme tokens
-```
+StudyBuddy follows a **Dark Glassmorphism** aesthetic designed to minimize eye strain and maximize focus during long sessions.
+
+- **Semantic Tokens**: The entire UI is built on a theme-aware token system (e.g., `bg-background`, `bg-card`).
+- **Mode Persistence**: A floating theme toggle allows instant switching between deep obsidian and clean linear modes, with preference stored in `localStorage`.
+- **Micro-Animations**: Powered by `framer-motion` for a premium, tactile feel.
 
 ---
 
-## ⚛️ React Concepts Used
+## 🏗️ Technical Infrastructure
 
-| Concept | Usage |
-|---------|-------|
-| `useState` | Form inputs, modal visibility, active tabs, filters |
-| `useEffect` | localStorage persistence, analytics |
-| `useContext` | Accessing global state across all pages |
-| `useMemo` | Optimised progress calculations in `useProgress` |
-| **Context API** | `StudyContext` provides subjects, topics, tasks app-wide |
-| **Custom Hooks** | `useTasks`, `useSubjects`, `useProgress`, `useDebounce` |
-| **React Router DOM** | 5 routes with nested layout and `<Outlet>` |
-| **Lazy Loading** | Pages loaded with `React.lazy` + `Suspense` |
-| **Framer Motion** | Animated modal entry (`scale` + `y` transitions) |
+| Layer | Implementation |
+|-------|----------------|
+| **Framework** | React 18 (Vite) |
+| **Database** | Supabase (PostgreSQL) |
+| **Logic** | Custom Hooks + Context API |
+| **AI Model** | Gemini 2.5 Flash |
+| **Security** | Row Level Security (RLS) |
 
----
+### 🔐 Security & Persistence
+Unlike standard educational apps, StudyBuddy uses **Cloud-Grade Persistence**. All your subjects, topics, and study sessions are synced to a Supabase backend with user-specific isolation.
 
-## 📦 Installation
-
-```bash
-# Clone or navigate to the project folder
-cd "Study Companion"
-
-# Install dependencies
-npm install
-
-# Start the development server
-npm run dev
-```
+> [!IMPORTANT]
+> **Developer Bypass**: To facilitate testing without API rate-limits, developers can run `localStorage.setItem("devBypass", "true")` in the console to enter a secure sandbox mode.
 
 ---
 
-## 🔑 AI API Key
+## ⚙️ Installation & Setup
 
-The project uses the **Google Gemini API**. The API key is pre-configured in:
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/your-username/study-buddy.git
+   ```
 
-```
-src/services/aiService.js
-```
+2. **Initialize Dependencies**
+   ```bash
+   npm install
+   ```
 
-To use your own key, replace the value of `GEMINI_API_KEY` in that file.  
-Get a free key at: **https://aistudio.google.com/apikey**
+3. **Database Setup**
+   Run the SQL scripts located in `C:\Users\aryan\.gemini\antigravity\brain\...\supabase_setup.sql.md` in your Supabase SQL Editor.
+
+4. **Launch Portal**
+   ```bash
+   npm run dev
+   ```
 
 ---
 
-## 💾 Data Persistence
-
-All data (subjects, topics, tasks) is stored in the browser's **localStorage**, so your data persists across page refreshes without needing a backend.
-
----
-
-## 📱 Responsive Design
-
-| Breakpoint | Layout |
-|-----------|--------|
-| > 1024px | **Optimized Sidebar (320px)** — maximum visibility with single-line text |
-| < 1024px | **Responsive Drawer** — hidden by default, accessible via menu button |
-| < 768px | **Mobile-Optimized** — single-column layout with touch-friendly controls |
+## 📱 Responsiveness
+| Device | Strategy |
+|--------|----------|
+| **Desktop** | Fixed premium sidebar with max-width content container. |
+| **Tablet** | Collapsible sidebar drawer with grid-based layout shift. |
+| **Mobile** | Single-column stack with touch-optimized floating toggles. |
 
 ---
 
 ## 👨‍💻 Author
 
 **Aryan Moorthy**  
-Built as part of the Scaler School of Technology's React curriculum — RD 3 Project.
+Developed as part of the **Scaler School of Technology** React Curriculum.
+"Transforming the way developers and students master complexity."
