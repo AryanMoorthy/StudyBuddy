@@ -61,7 +61,7 @@ Designed for **100% Uptime** using a proprietary failover strategy:
 
 - **Frontend**: React 18 (Vite), TailwindCSS, Framer Motion
 - **Backend**: Supabase (Auth, DB, Realtime)
-- **Intelligence**: Gemini 1.5 Flash / Pro (Resilient Multi-Key Logic)
+- **Intelligence**: Gemini 2.5 Flash (Resilient Multi-Key Logic)
 - **Analytics**: Recharts (Responsive & Mount-Guarded)
 
 ---
