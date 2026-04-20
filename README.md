@@ -1,4 +1,8 @@
-# 🎓 StudyBuddy: Production-Grade Adaptive Learning Ecosystem
+![StudyBuddy Banner](file:///C:/Users/aryan/.gemini/antigravity/brain/48bc78de-c334-4bcc-8122-42bf9746dcbc/studybuddy_readme_banner_1776698727223.png)
+
+<div align="center">
+  <h3>🚀 <a href="https://study-buddy-one-omega.vercel.app/">Live Demo</a></h3>
+</div>
 
 StudyBuddy is a next-generation education platform designed to optimize long-term retention through **behavioral analytics**, **mathematical priority modeling**, and **resilient AI integration**. It transforms raw study data into a personalized "Learning OS" that tells you exactly what to study, when, and why.
 
