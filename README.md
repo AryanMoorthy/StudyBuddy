@@ -1,5 +1,3 @@
-![StudyBuddy Banner](file:///C:/Users/aryan/.gemini/antigravity/brain/48bc78de-c334-4bcc-8122-42bf9746dcbc/studybuddy_readme_banner_1776698727223.png)
-
 <div align="center">
   <h3>🚀 <a href="https://study-buddy-one-omega.vercel.app/">Live Demo</a></h3>
 </div>
