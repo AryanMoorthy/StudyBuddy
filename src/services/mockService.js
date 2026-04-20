@@ -116,9 +116,10 @@ export const mockService = {
       const q = { ...fallbackPool[idx] };
       q.question = q.question.replace(/\[TOPIC\]/g, topic);
       q.explanation = q.explanation.replace(/\[TOPIC\]/g, topic);
+      q.topic = topic;
       questions.push(q);
     }
     
-    return questions.slice(0, count);
+    return questions.slice(0, count).map(q => ({ ...q, topic }));
   }
 };

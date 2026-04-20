@@ -19,8 +19,8 @@ export const actionEngine = {
       const stats = learningEngine.computeTopicStats(topic, statsMap[topic.id]);
       const priority = learningEngine.computePriority(stats);
       
-      // Calculate specific densities
-      const mistakeCount = mistakes.filter(m => m.topic === topic.name || m.topic_id === topic.id).length;
+      // Calculate specific densities using smart match
+      const mistakeCount = mistakes.filter(m => learningEngine.matchMistakeToTopic(m, topic)).length;
       const overdueFactor = learningEngine.getOverdueFactor(topic.next_review);
       
       // Recency penalty (normalized 0-1) - increases if NOT seen recently

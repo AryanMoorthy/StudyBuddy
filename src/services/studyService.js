@@ -148,6 +148,7 @@ export const studyService = {
 
         const payload = {
           user_id: userId,
+          topic_id: q.topic_id || null, // Persist the internal ID for filtering
           question_hash: questionHash,
           question: q.question,
           options: q.options,
@@ -185,7 +186,8 @@ export const studyService = {
     // 2. UPDATE EXISTING RECORD
     console.log("📡 Mistake Mastery: Existing record found. Updating statistics.");
     let updates = {
-      last_attempted: new Date().toISOString()
+      last_attempted: new Date().toISOString(),
+      topic_id: q.topic_id || existing.topic_id
     };
 
     if (isCorrect) {

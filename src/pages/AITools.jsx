@@ -461,8 +461,6 @@ const FlashcardViewer = ({ data }) => {
 };
 
 const AITools = () => {
-  const { subjects, topics, mistakes, userTopicStats, submitIntelligenceFeedback, refreshData, recordQuizResult } = useContext(StudyContext);
-  const { profile: intelligenceProfile } = useLearningIntelligence();
   const [selectedTopicId, setSelectedTopicId] = useState('');
   const [activeTool, setActiveTool] = useState('summary');
   const [questionCount, setQuestionCount] = useState(5);
@@ -471,6 +469,11 @@ const AITools = () => {
   const [result, setResult] = useState(null);
   const [quizKey, setQuizKey] = useState(0);
   const [isSimulationMode, setIsSimulationMode] = useState(false);
+
+  const { subjects, topics, mistakes, userTopicStats, submitIntelligenceFeedback, refreshData, recordQuizResult } = useContext(StudyContext);
+  const { profile: intelligenceProfile } = useLearningIntelligence();
+  
+  // Intelligence Diagnostic Log removed. System is stable.
 
   const tools = [
     { id: 'summary', title: 'Topic Summary', desc: 'Condensed key insights', icon: FileText, prompt: 'Create a concise, structured markdown summary of this topic for a 5-minute review.' },
@@ -494,9 +497,22 @@ const AITools = () => {
   const handleGenerate = async (countOverride = null) => {
     try {
       if (activeTool === 'mistake_mastery') {
-         if (mistakes.length === 0) return toast.info("No mistakes to practice. Great work!");
+         const selectedTopic = topics.find(t => t.id === selectedTopicId);
+         
+         // Filter mistakes if a specific topic is selected using central smart match
+         let targetMistakes = mistakes;
+         if (selectedTopicId) {
+            targetMistakes = mistakes.filter(m => 
+              learningEngine.matchMistakeToTopic(m, selectedTopic)
+            );
+         }
+
+         if (targetMistakes.length === 0) {
+            return toast.info(selectedTopicId ? `No mistakes detected for "${selectedTopic?.name}". Great work!` : "No mistakes to practice currently!");
+         }
+
          // Map Supabase snake_case → QuizViewer camelCase
-         const mapped = mistakes.map(m => ({
+         const mapped = targetMistakes.map(m => ({
            ...m,
            correctAnswer: parseInt(m.correct_answer ?? m.correctAnswer, 10),
            options: Array.isArray(m.options) ? m.options : JSON.parse(m.options || '[]'),
@@ -522,7 +538,14 @@ const AITools = () => {
         let mockData;
         if (activeTool === 'summary') mockData = mockService.generateSummary(selectedTopic.name);
         if (activeTool === 'flashcards') mockData = mockService.generateFlashcards(selectedTopic.name);
-        if (activeTool === 'questions') mockData = mockService.generateQuestions(selectedTopic.name, finalCount);
+        if (activeTool === 'questions') {
+           const rawMock = mockService.generateQuestions(selectedTopic.name, finalCount);
+           mockData = rawMock.map(q => ({
+              ...q,
+              topic_id: selectedTopicId,
+              topic: selectedTopic.name
+           }));
+        }
         
         setResult(mockData);
         toast.info('Synthesizing using Local Logic Engine');
@@ -557,12 +580,20 @@ const AITools = () => {
       try {
         const data = await generateStudyMaterial(selectedTopic.name, enrichedPrompt);
         
+        let finalResults = data;
         if (tool.id === 'questions') {
           if (!Array.isArray(data) || data.length === 0) throw new Error("Invalid quiz format received.");
           if (data.some(q => !q.options || q.options.length !== 4)) throw new Error("Incomplete question data detected.");
+          
+          // CRITICAL: Tag each question with topic_id for mistake tracking
+          finalResults = data.map(q => ({
+            ...q,
+            topic_id: selectedTopicId,
+            topic: selectedTopic.name
+          }));
         }
         
-        setResult(data);
+        setResult(finalResults);
         setIsSimulationMode(false);
         toast.success('Strategy Augmented Successfully!');
       } catch (err) {
@@ -581,6 +612,7 @@ const AITools = () => {
           <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-foreground">Intelligence Portal</h1>
           <p className="text-muted-foreground mt-2 text-lg font-medium">Augment your study process with synthetic logic.</p>
         </div>
+
           <div className={`flex items-center gap-3 px-6 py-3 border rounded-2xl shadow-soft transition-all duration-500
             ${isSimulationMode ? 'bg-amber-500/5 border-amber-500/20 text-amber-600' : 'bg-primary/5 border-primary/20 text-primary'}`}>
             {isSimulationMode ? <Zap className="w-5 h-5 fill-amber-500" /> : <Sparkles className="w-5 h-5" />}
@@ -605,12 +637,11 @@ const AITools = () => {
               <Target className="w-3.5 h-3.5" /> Target Topic
             </label>
             <select 
-              disabled={activeTool === 'mistake_mastery'}
               className="w-full bg-muted/20 border border-border rounded-2xl px-6 py-5 text-sm font-bold text-foreground outline-none focus:ring-2 focus:ring-primary shadow-soft transition-all cursor-pointer disabled:opacity-40" 
               value={selectedTopicId} 
               onChange={(e) => setSelectedTopicId(e.target.value)}
             >
-              <option value="" disabled hidden>{activeTool === 'mistake_mastery' ? 'Global Mistakes Selected' : 'Select an area of focus...'}</option>
+              <option value="">{activeTool === 'mistake_mastery' ? 'All Topics (Global Review)' : 'Select an area of focus...'}</option>
               {topics.map(t => (
                 <option key={t.id} value={t.id}>[{subjects.find(s => s.id === t.subject_id)?.name}] {t.name}</option>
               ))}
@@ -626,8 +657,19 @@ const AITools = () => {
               {activeTool === 'mistake_mastery' ? (
                 <div className="p-5 bg-primary/5 border border-primary/20 rounded-2xl flex items-center justify-between">
                    <div className="flex flex-col">
-                      <span className="text-xs font-black uppercase text-primary">Active Mistakes: {mistakes.length}</span>
-                      <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mt-1">Sorted by Difficulty Algorithm</span>
+                    <span className="text-xs font-black uppercase text-primary">
+                        {(() => {
+                           if (!selectedTopicId) return `Active Mistakes: ${mistakes.length}`;
+                           const st = topics.find(t => t.id === selectedTopicId);
+                           const stName = st?.name?.toLowerCase().trim();
+                           
+                           const matches = mistakes.filter(m => learningEngine.matchMistakeToTopic(m, st));
+                           return `Active Mistakes: ${matches.length}`;
+                        })()}
+                      </span>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mt-1">
+                        {selectedTopicId ? `Focusing on ${topics.find(t => t.id === selectedTopicId)?.name}` : 'Global Curriculum View'}
+                      </span>
                    </div>
                    <History className="w-5 h-5 text-primary opacity-40" />
                 </div>

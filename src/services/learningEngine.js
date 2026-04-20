@@ -8,7 +8,35 @@
 // 1. Core Utilities
 const clamp = (val, min = 0, max = 1) => Math.min(max, Math.max(min, val));
 
+const TOPIC_KEYWORDS = {
+  'linear algebra': ['matrix', 'vector', 'eigen', 'determinant', 'space', 'transformation', 'basis'],
+  'hashing': ['collision', 'map', 'hash', 'table', 'key', 'slot', 'bucket'],
+  'bfs': ['breadth', 'search', 'graph', 'queue', 'level', 'traverse'],
+  'reactive programming': ['react', 'state', 'observable', 'stream', 'event', 'flow', 'subscribe', 'subject'],
+};
+
 export const learningEngine = {
+  // Utility for smart matching mistakes to topics
+  matchMistakeToTopic(m, topic) {
+    if (!topic || !m) return false;
+    const topicId = String(topic.id);
+    const topicName = topic.name.toLowerCase().trim();
+    
+    // 1. Direct ID or Name Match
+    if (String(m.topic_id) === topicId) return true;
+    if (m.topic && m.topic.toLowerCase().trim() === topicName) return true;
+
+    // 2. Keyword Match for Legacy/General Data
+    const label = (m.topic || "").toLowerCase();
+    if (label === 'general' || !m.topic) {
+      const questionText = (m.question || "").toLowerCase();
+      const keywords = TOPIC_KEYWORDS[topicName] || [];
+      return questionText.includes(topicName) || keywords.some(kw => questionText.includes(kw));
+    }
+
+    return false;
+  },
+
   // 2. Compute Topic Performance Stat Object
   computeTopicStats(topic, rawStats) {
     // Cold Start Strategy: if tracking doesn't exist, we fallback
