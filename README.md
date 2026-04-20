@@ -37,10 +37,20 @@ Engineered for **100% Reliability** through a multi-layered failover strategy.
 
 ## ✨ Key Features
 
+- **🔐 Secure Authentication**: Robust multi-device sync and private study profiles powered by **Supabase Auth**.
 - **🛡️ Mistake Mastery**: A dedicated portal that captures every failed quiz attempt and transforms them into targeted "Mistake Drills."
 - **📊 AI Coach**: Proactive analytics layer that provides cached coaching insights every 10 minutes based on your performance.
 - **⏳ Deep Focus Mode**: Integrated Pomodoro timer with spatial audio and a distraction-free, glassmorphic interface.
 - **📝 Today's Plan**: Automatically generates a 4-step actionable study path every 24 hours using a 70/20/10 growth split.
+
+---
+
+## 🚀 Getting Started
+
+1.  **Access the Portal**: Enter through the [Live Demo](https://study-buddy-one-omega.vercel.app/) or host it locally.
+2.  **Authentication**: Create a secure account via the **Signup** page to initialize your tracking stats.
+3.  **Define Topics**: Add your subjects to the **Dashboard** to fuel the AI generation engine.
+4.  **Execute & Retain**: Follow your **Today's Plan** to optimize long-term retention.
 
 ---
 
