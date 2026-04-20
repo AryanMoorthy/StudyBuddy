@@ -1,8 +1,7 @@
 import axios from 'axios';
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-// Using Gemini 2.5 Flash as requested.
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+const PRIMARY_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const SECONDARY_KEY = import.meta.env.VITE_GEMINI_API_KEY_SECONDARY;
 
 /**
  * Ultra-robust JSON parser for AI responses.
@@ -35,46 +34,42 @@ const parseGeminiJson = (text) => {
     if (parsed) return postProcess(parsed);
   }
 
-  // 4. Level 4: Truncation Recovery (For [ ... sequences that didn't close)
+  // 4. Level 4: Truncation Recovery
   if (text.includes('[') && !text.includes(']')) {
     const fixedText = text + ']';
     parsed = cleanAndParse(fixedText);
     if (parsed) return postProcess(parsed);
   }
 
-  console.error('Failed to parse Gemini JSON. Raw Response Snippet:', text.substring(0, 1000));
-  throw new Error('AI Response was not in a recognizable JSON format. The response might have been truncated or censored.');
+  throw new Error('AI Response was not in a recognizable JSON format.');
 };
 
-/**
- * Ensures the parsed JSON is in the expected final format (usually an array)
- */
 const postProcess = (data) => {
-  // If it's already an array, return it
   if (Array.isArray(data)) return data;
-  
-  // If it's an object, search its top-level keys for the first array
-  // (Handles cases where AI returns { "questions": [...] })
   if (typeof data === 'object' && data !== null) {
      const innerArray = Object.values(data).find(val => Array.isArray(val));
      if (innerArray) return innerArray;
   }
-  
   return data;
 };
 
-export const generateStudyMaterial = async (topic, prompt) => {
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Core Generation Logic with Failover Support
+ */
+export const generateStudyMaterial = async (topic, prompt, retryCount = 0, useSecondary = false) => {
   if (!prompt) throw new Error('AI prompt is missing.');
 
+  const activeKey = (useSecondary && SECONDARY_KEY) ? SECONDARY_KEY : PRIMARY_KEY;
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeKey}`;
   const isJsonExpected = prompt.toLowerCase().includes('json') || prompt.toLowerCase().includes('array');
 
   try {
     const response = await axios.post(
-      GEMINI_API_URL,
+      apiUrl,
       {
-        contents: [{
-          parts: [{ text: `${prompt} Topic: ${topic}` }]
-        }],
+        contents: [{ parts: [{ text: `${prompt} Topic: ${topic}` }] }],
         generationConfig: {
             temperature: 0.7,
             topK: 40,
@@ -84,43 +79,48 @@ export const generateStudyMaterial = async (topic, prompt) => {
         }
       },
       {
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 15000
       }
     );
 
     const candidate = response.data.candidates?.[0];
-    
     if (candidate) {
-      // Check for safety finish reason
-      if (candidate.finishReason === 'SAFETY') {
-        throw new Error('Instructional Safety: The AI model refused to generate this specific content for safety reasons.');
-      }
-      
-      // Check for truncation
-      if (candidate.finishReason === 'MAX_TOKENS') {
-        console.warn('AI response was truncated due to token limits.');
-      }
-
+      if (candidate.finishReason === 'SAFETY') throw new Error('Instructional Safety: Refused content.');
       if (candidate.content?.parts?.[0]?.text) {
         const rawContent = candidate.content.parts[0].text;
-        
-        if (isJsonExpected) {
-          return parseGeminiJson(rawContent);
-        }
+        if (isJsonExpected) return parseGeminiJson(rawContent);
         return rawContent;
       }
     }
-
     throw new Error('Empty or invalid response from AI model.');
+
   } catch (error) {
-    console.error('Gemini API Error Context:', error);
+    const status = error.response?.status;
     const message = error.response?.data?.error?.message || error.message;
-    
-    if (message.includes('quota')) {
-      throw new Error('AI quota exceeded. Please wait a moment or check your API limit.');
+    const isQuota = status === 429 || message.toLowerCase().includes('quota');
+
+    // 1. Failover: If primary key fails with quota, try secondary key immediately
+    if (isQuota && !useSecondary && SECONDARY_KEY) {
+      console.warn('Primary AI Quota Exceeded. Rotating to Secondary Key...');
+      return generateStudyMaterial(topic, prompt, 0, true);
     }
-    throw new Error(`AI Synthesis System: ${message}`);
+
+    // 2. Exponential Backoff: Only if the current key is active and failing
+    if (status === 429 && retryCount < 2) {
+      const delay = Math.pow(4, retryCount) * 500;
+      console.warn(`Gemini Quota Hit (${useSecondary ? 'Secondary' : 'Primary'}). Retrying in ${delay}ms...`);
+      await sleep(delay);
+      return generateStudyMaterial(topic, prompt, retryCount + 1, useSecondary);
+    }
+
+    // 3. Final Failure: If both failed or non-quota error
+    console.error('Gemini API Error Context:', error);
+    const enhancedError = new Error(isQuota 
+      ? 'All AI channels are currently busy. Activating local synthetic engine.' 
+      : `AI Synthesis System: ${message}`
+    );
+    enhancedError.isQuotaExceeded = isQuota;
+    throw enhancedError;
   }
 };

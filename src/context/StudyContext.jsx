@@ -4,8 +4,26 @@ import { studyService } from '../services/studyService';
 import { toast } from 'react-toastify';
 import { format, subDays, isSameDay, startOfDay } from 'date-fns';
 import { learningEngine } from '../services/learningEngine';
+import { actionEngine } from '../services/actionEngine';
+import { aiCoach } from '../services/aiCoach';
 
-export const StudyContext = createContext();
+export const StudyContext = createContext({
+  subjects: [], topics: [], sessions: [], mistakes: [],
+  userTopicStats: {}, stats: {}, coachInsights: [], loading: true,
+  recordStudySession: async () => ({}),
+  submitIntelligenceFeedback: async () => {},
+  deleteTopic: async () => ({}),
+  recordMistakeResult: async () => {},
+  removeMistakeManually: async () => {},
+  refreshData: async () => {},
+  addSubject: async () => ({}),
+  addTopic: async () => ({}),
+  updateTopic: async () => ({})
+});
+
+const AI_COOLDOWN = 10 * 60 * 1000; // 10 minutes cache/cooldown
+const INSIGHTS_CACHE_KEY = 'sb_coach_insights_v2';
+const INSIGHTS_TIMESTAMP_KEY = 'sb_coach_insights_ts_v2';
 
 export const StudyProvider = ({ children }) => {
   const { user } = useAuth();
@@ -14,43 +32,92 @@ export const StudyProvider = ({ children }) => {
   const [sessions, setSessions] = useState([]);
   const [mistakes, setMistakes] = useState([]);
   const [userTopicStats, setUserTopicStats] = useState({});
+  const [coachInsights, setCoachInsights] = useState(() => {
+    try {
+      const cached = localStorage.getItem(INSIGHTS_CACHE_KEY);
+      return cached ? JSON.parse(cached) : [];
+    } catch { return []; }
+  });
+  const [lastAiUpdate, setLastAiUpdate] = useState(() => {
+    try {
+      const ts = localStorage.getItem(INSIGHTS_TIMESTAMP_KEY);
+      return ts ? parseInt(ts, 10) : 0;
+    } catch { return 0; }
+  });
   const [loading, setLoading] = useState(true);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!user) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     
-    const [subsRes, topicsRes, sessionsRes, mistakesRes, statsRes] = await Promise.all([
-      studyService.getSubjects(user.id),
-      studyService.getTopics(user.id),
-      studyService.getAllSessions(user.id),
-      studyService.getMistakes(user.id),
-      studyService.getUserTopicStats(user.id)
-    ]);
+    try {
+      const results = await Promise.allSettled([
+        studyService.getSubjects(user.id),
+        studyService.getTopics(user.id),
+        studyService.getAllSessions(user.id),
+        studyService.getMistakes(user.id),
+        studyService.getUserTopicStats(user.id)
+      ]);
 
-    if (subsRes.error) toast.error('Failed to load subjects');
-    else setSubjects(subsRes.data);
+      const subjectsRes = results[0].status === 'fulfilled' ? results[0].value : { data: [] };
+      const topicsRes   = results[1].status === 'fulfilled' ? results[1].value : { data: [] };
+      const sessionsRes = results[2].status === 'fulfilled' ? results[2].value : { data: [] };
+      const mistakesRes = results[3].status === 'fulfilled' ? results[3].value : { data: [] };
+      const statsRes    = results[4].status === 'fulfilled' ? results[4].value : { data: [] };
 
-    if (topicsRes.error) toast.error('Failed to load topics');
-    else setTopics(topicsRes.data);
+      setSubjects(subjectsRes.data || []);
+      setTopics(topicsRes.data || []);
+      setSessions(sessionsRes.data || []);
+      setMistakes(mistakesRes.data || []);
 
-    if (sessionsRes.error) console.error('Failed to load sessions for analytics');
-    else setSessions(sessionsRes.data);
-    
-    if (mistakesRes.error) console.error('Failed to load mistakes');
-    else setMistakes(mistakesRes.data || []);
-
-    if (statsRes.error) {
-       console.error('Failed to load intelligence stats', statsRes.error);
-    } else {
-       // Convert array to O(1) lookup map
-       const statsMap = {};
-       statsRes.data?.forEach(s => statsMap[s.topic_id] = s);
-       setUserTopicStats(statsMap);
+      const statsMap = {};
+      if (statsRes.data) {
+        statsRes.data.forEach(s => statsMap[s.topic_id] = s);
+      }
+      setUserTopicStats(statsMap);
+    } catch (err) {
+      console.error('🔥 Systemic Fetch Failure:', err);
+    } finally {
+      if (!silent) setLoading(false);
     }
-
-    setLoading(false);
   }, [user]);
+
+  // Reactive and stable statsMap for components
+  const currentStatsMap = useMemo(() => {
+    return userTopicStats || {};
+  }, [userTopicStats]);
+
+  // AI Insights - Secured non-blocking call with throttling
+  useEffect(() => {
+    if (loading || !topics.length) return;
+    
+    const triggerInsights = async () => {
+      const now = Date.now();
+      const timeSinceLastUpdate = now - lastAiUpdate;
+
+      // Only fetch if insights are empty OR cooldown has passed (10 mins)
+      if (coachInsights.length > 0 && timeSinceLastUpdate < AI_COOLDOWN) {
+        console.log(`🧠 AI Coach: Using cached insights (${Math.round(timeSinceLastUpdate/1000)}s old)`);
+        return;
+      }
+
+      try {
+        console.log("🤖 AI Coach: Requesting fresh insights from Gemini...");
+        const insights = await aiCoach.getInsights(topics, currentStatsMap, mistakes, sessions);
+        
+        if (insights && insights.length > 0) {
+          setCoachInsights(insights);
+          setLastAiUpdate(now);
+          localStorage.setItem(INSIGHTS_CACHE_KEY, JSON.stringify(insights));
+          localStorage.setItem(INSIGHTS_TIMESTAMP_KEY, now.toString());
+        }
+      } catch (err) {
+        console.error("🤖 AI Coach Failure:", err);
+      }
+    };
+
+    triggerInsights();
+  }, [loading, topics, currentStatsMap, mistakes, sessions, lastAiUpdate, coachInsights.length]);
 
   useEffect(() => {
     fetchData();
@@ -92,7 +159,7 @@ export const StudyProvider = ({ children }) => {
     }
 
     toast.success('Strategy updated and revision scheduled!');
-    fetchData(); // Refresh data
+    fetchData(true); // Silent background refresh
     return { error: null };
   };
 
@@ -103,7 +170,7 @@ export const StudyProvider = ({ children }) => {
       return { error };
     }
     toast.success('Topic removed from curriculum');
-    fetchData();
+    fetchData(true);
     return { error: null };
   };
 
@@ -192,21 +259,48 @@ export const StudyProvider = ({ children }) => {
     };
   }, [topics, streak, masteryTrend]);
 
-  // --- 🧠 INTELLIGENCE LAYER MEMOIZATION --- //
-  const priorityQueue = useMemo(() => {
-     if (!topics.length) return [];
-     return learningEngine.getPriorityQueue(topics, userTopicStats);
-  }, [topics, userTopicStats]);
+  // --- Intelligence Logic now handled by useLearningIntelligence hook --- //
 
-  const learningPath = useMemo(() => {
-     if (!priorityQueue.length) return [];
-     return learningEngine.generateLearningPath(priorityQueue);
-  }, [priorityQueue]);
+  // --- After Quiz: Update topic stats so AI Coach reflects actual quiz performance ---
+  const recordQuizResult = async (topicId, correctCount, totalCount) => {
+    if (!user || !topicId) return;
 
-  const intelligenceProfile = useMemo(() => {
-     if (!priorityQueue.length) return { weakTopics: [], strongTopics: [], avgAccuracy: 0 };
-     return learningEngine.computeUserProfile(priorityQueue);
-  }, [priorityQueue]);
+    const { data: existing, error: fetchError } = await studyService.getUserTopicStats(user.id);
+    
+    if (fetchError) {
+      console.error("📊 Stats Engine: Failed to fetch existing record", fetchError);
+      return;
+    }
+
+    const current = (existing || []).find(s => s.topic_id === topicId) || {};
+
+    const newTimesCorrect = (current.times_correct || 0) + correctCount;
+    const newTimesWrong  = (current.times_wrong  || 0) + (totalCount - correctCount);
+    const newTimesSeen   = (current.times_seen   || 0) + totalCount;
+
+    const { error: upsertError } = await studyService.upsertUserTopicStats(user.id, topicId, {
+      times_correct: newTimesCorrect,
+      times_wrong: newTimesWrong,
+      times_seen: newTimesSeen,
+      last_seen: new Date().toISOString()
+    });
+
+    if (upsertError) {
+      console.error("📊 Stats Engine: Database Write Failed!", upsertError);
+      toast.error("Intelligence Update Failed: Database Sync Error.");
+      return;
+    }
+
+    console.log("📊 Stats Engine: Successfully synchronized quiz results to Intelligence Profile.");
+    
+    // Invalidate AI Coach cache so next visit gets fresh coaching based on new stats
+    setCoachInsights([]); // Clear in-memory state to force re-fetch
+    setLastAiUpdate(0);   // Reset timestamp to bypass cooldown
+    localStorage.removeItem('sb_coach_insights_v2');
+    localStorage.removeItem('sb_coach_insights_ts_v2');
+
+    fetchData(true); // Silent background refresh
+  };
 
   const submitIntelligenceFeedback = async (payload) => {
     if (!user) return;
@@ -215,7 +309,7 @@ export const StudyProvider = ({ children }) => {
     if (error) {
        console.error("Intelligence Update Failed", error);
     } else {
-       fetchData(); // Refresh the global stats silently
+       fetchData(true); // Refresh silently
     }
   };
 
@@ -223,21 +317,22 @@ export const StudyProvider = ({ children }) => {
     user,
     subjects,
     topics,
+    sessions,
+    mistakes,
+    userTopicStats,
     loading,
     stats,
-    mistakes,
-    priorityQueue,
-    learningPath,
-    intelligenceProfile,
+    coachInsights,
     recordStudySession,
+    recordQuizResult,
     submitIntelligenceFeedback,
     deleteTopic,
     recordMistakeResult,
     removeMistakeManually,
     refreshData: fetchData,
-    addSubject: (sub) => studyService.createSubject(user.id, sub).then(r => { fetchData(); return r; }),
-    addTopic: (top) => studyService.createTopic(top).then(r => { fetchData(); return r; }),
-    updateTopic: (id, ups) => studyService.updateTopic(id, ups).then(r => { fetchData(); return r; })
+    addSubject: (sub) => studyService.createSubject(user.id, sub).then(r => { fetchData(true); return r; }),
+    addTopic: (top) => studyService.createTopic(top).then(r => { fetchData(true); return r; }),
+    updateTopic: (id, ups) => studyService.updateTopic(id, ups).then(r => { fetchData(true); return r; })
   };
 
   return (

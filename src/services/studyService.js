@@ -224,6 +224,71 @@ export const studyService = {
     return await supabase.from('mistakes').delete().eq('id', id);
   },
 
+  // ── Pomodoro Session Logging ─────────────────────────────────────────────
+  async logPomodoroSession(userId, topicId, duration, type = 'work') {
+    try {
+      // Guard: skip invalid/empty sessions
+      if (!userId || !duration || duration < 1) {
+        console.warn('⚠️ Pomodoro: Invalid session params — skipping', { userId, duration, type });
+        return { data: null, error: null };
+      }
+
+      const { data, error } = await supabase
+        .from('pomodoro_sessions')
+        .insert([{
+          user_id: userId,
+          topic_id: topicId || null,
+          duration,
+          type,
+          completed_at: new Date().toISOString(),
+        }])
+        .select();
+
+      if (error) {
+        console.error('❌ Pomodoro: Session log failed', error);
+        return { data: null, error };
+      }
+
+      console.log('✅ Pomodoro: Session logged', { duration, type, topicId });
+      return { data, error: null };
+    } catch (err) {
+      console.error('🔥 Pomodoro: Unexpected fatal log error', err);
+      return { data: null, error: err };
+    }
+  },
+
+  // ── Topic Time Summary (aggregate seconds per topic) ─────────────────────
+  async getTopicTimeSummary(userId) {
+    if (!userId) return { data: {}, error: null };
+
+    try {
+      const { data, error } = await supabase
+        .from('pomodoro_sessions')
+        .select('topic_id, duration')
+        .eq('user_id', userId)
+        .eq('type', 'work')
+        .not('topic_id', 'is', null);
+
+      if (error) {
+        console.error('❌ Pomodoro: Failed to fetch time summary (Table might be missing or RLS error)', error);
+        return { data: {}, error };
+      }
+
+      // Aggregate: { [topic_id]: totalSeconds }
+      const summary = {};
+      if (data) {
+        data.forEach(s => {
+          summary[s.topic_id] = (summary[s.topic_id] || 0) + (s.duration || 0);
+        });
+      }
+
+      return { data: summary, error: null };
+    } catch (err) {
+      console.error('🔥 Pomodoro: Critical fetch error', err);
+      return { data: {}, error: err };
+    }
+  },
+
   // SM-2 Algorithm Logic
   calculateNextReview(rating, previousEF = 2.5, previousInterval = 0, repetitionCount = 0) {
     let ef = previousEF;

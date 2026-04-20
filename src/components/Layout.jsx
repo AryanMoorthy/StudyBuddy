@@ -1,19 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useFocus, PLAYLISTS } from '../context/FocusContext';
 import ThemeToggle from './ThemeToggle';
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  CheckSquare, 
-  Calendar, 
-  Sparkles, 
-  LogOut, 
-  Menu, 
-  X, 
-  Sun, 
-  Moon,
-  GraduationCap
+import {
+  LayoutDashboard,
+  BookOpen,
+  CheckSquare,
+  Calendar,
+  Sparkles,
+  LogOut,
+  Menu,
+  X,
+  GraduationCap,
+  Timer,
+  Play,
+  Pause,
+  Music2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -33,7 +36,26 @@ const Layout = () => {
     { path: '/tasks', label: 'Tasks', icon: CheckSquare },
     { path: '/revision', label: 'Revision', icon: Calendar },
     { path: '/ai-tools', label: 'AI Tools', icon: Sparkles },
+    { path: '/focus', label: 'Focus Mode', icon: Timer },
   ];
+
+  const {
+    isMusicPlaying,
+    toggleMusic,
+    isRunning,
+    timeLeft,
+    mode,
+    currentPlaylist,
+    MODES,
+  } = useFocus();
+
+  const formatTime = (s) => {
+    const m = Math.floor(s / 60).toString().padStart(2, '0');
+    const sec = (s % 60).toString().padStart(2, '0');
+    return `${m}:${sec}`;
+  };
+
+  const showMiniPlayer = isMusicPlaying || isRunning;
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
@@ -83,11 +105,53 @@ const Layout = () => {
           </div>
 
           <div className="mt-auto p-8 space-y-4">
+            {/* ── Persistent Mini-Player ──────────────────────────────── */}
+            <AnimatePresence>
+              {showMiniPlayer && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  className="mb-2"
+                >
+                  <NavLink
+                    to="/focus"
+                    className="block p-4 bg-primary/5 border border-primary/20 rounded-2xl hover:bg-primary/10 transition-all group"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Music2 className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-primary">
+                          {PLAYLISTS[currentPlaylist]?.name || 'Study Music'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => { e.preventDefault(); toggleMusic(); }}
+                        className="p-1.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/80 transition-all"
+                      >
+                        {isMusicPlaying
+                          ? <Pause className="w-2.5 h-2.5" />
+                          : <Play  className="w-2.5 h-2.5" />}
+                      </button>
+                    </div>
+                    {isRunning && MODES && (
+                      <div className="flex items-center gap-1.5">
+                        <Timer className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-[9px] font-bold text-muted-foreground">
+                          🍅 {formatTime(timeLeft)} remaining
+                        </span>
+                      </div>
+                    )}
+                  </NavLink>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <div className="flex items-center gap-3 w-full px-1 py-1">
               <ThemeToggle floating={false} />
               <span className="text-muted-foreground font-bold text-sm">Theme Settings</span>
             </div>
-            
+
             <div className="pt-6 border-t border-border">
               <div className="flex items-center gap-3 mb-4 px-2">
                 <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center text-xs font-black text-primary border border-primary/20">
@@ -98,7 +162,7 @@ const Layout = () => {
                   <span className="text-[10px] text-muted-foreground font-bold truncate uppercase tracking-wider">{user?.email}</span>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={handleLogout}
                 className="flex items-center gap-3 w-full px-4 py-3 text-destructive border border-destructive/20 bg-destructive/5 hover:bg-destructive hover:text-destructive-foreground rounded-xl transition-all font-black text-xs uppercase tracking-widest"
               >

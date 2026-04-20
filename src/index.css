@@ -63,6 +63,10 @@
     --border: 217.2 32.6% 22%;
     --input: 217.2 32.6% 17.5%;
     --ring: 263.4 70% 50.4%;
+
+    /* Tell the browser to use dark-mode styling for native form controls
+       (select dropdowns, scrollbars, date pickers, etc.) */
+    color-scheme: dark;
   }
 }
 
@@ -134,4 +138,18 @@
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
   @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/30 transition-colors;
+}
+
+/* Dark mode: force native <select> dropdown to use dark colors.
+   color-scheme: dark handles most browsers, but Chrome on Windows
+   still renders option backgrounds with the OS light theme.
+   These rules override that. */
+.dark select option {
+  background-color: hsl(222.2, 40%, 12%);
+  color: hsl(210, 40%, 98%);
+}
+.dark select option:checked,
+.dark select option:hover {
+  background-color: hsl(263.4, 70%, 50.4%);
+  color: hsl(210, 40%, 98%);
 }

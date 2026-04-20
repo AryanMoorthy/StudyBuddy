@@ -112,15 +112,21 @@ export const learningEngine = {
   // 9. AI Context Extraction
   // Pulls limited prompt context ensuring no scale limits are breached
   computeUserProfile(queue) {
-    // Only topics explicitly attempted 
     const attempted = queue.filter(t => t.stats.times_seen > 0);
+
+    // Cold Start Fix: If no sessions exist, suggest the highest priority new topics
+    if (attempted.length === 0) {
+      return {
+        weakTopics: queue.slice(0, 3).map(t => t.name), // Show first 3 topics as focus areas
+        strongTopics: [],
+        avgAccuracy: null // Signal data pending
+      };
+    }
 
     const weakTopics = attempted.filter(t => t.stats.accuracy < 0.5).slice(0, 5).map(t => t.name);
     const strongTopics = attempted.filter(t => t.stats.accuracy > 0.8).slice(0, 3).map(t => t.name);
     
-    const avgAccuracy = attempted.length > 0 
-      ? attempted.reduce((acc, curr) => acc + curr.stats.accuracy, 0) / attempted.length 
-      : 0;
+    const avgAccuracy = attempted.reduce((acc, curr) => acc + curr.stats.accuracy, 0) / attempted.length;
 
     return {
       weakTopics,

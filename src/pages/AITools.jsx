@@ -28,8 +28,10 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { studyService } from '../services/studyService';
+import { useLearningIntelligence } from '../hooks/useLearningIntelligence';
+import { mockService } from '../services/mockService';
 
-const QuizViewer = ({ data, onRestart, onNewQuiz, onRetryIncorrect, isMistakeMode = false }) => {
+const QuizViewer = ({ data, onRestart, onNewQuiz, onRetryIncorrect, onQuizComplete, isMistakeMode = false }) => {
   const { recordMistakeResult, removeMistakeManually, mistakes, user } = useContext(StudyContext);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedIdx, setSelectedIdx] = useState(null);
@@ -104,6 +106,10 @@ const QuizViewer = ({ data, onRestart, onNewQuiz, onRetryIncorrect, isMistakeMod
       setIsAnswered(false);
     } else {
       setQuizFinished(true);
+      // Fire quiz completion callback with final score for topic stat tracking
+      if (onQuizComplete && !isMistakeMode) {
+        onQuizComplete(score + (selectedIdx === currentQuestion.correctAnswer ? 1 : 0), data.length);
+      }
     }
   };
 
@@ -455,7 +461,8 @@ const FlashcardViewer = ({ data }) => {
 };
 
 const AITools = () => {
-  const { subjects, topics, mistakes, intelligenceProfile, submitIntelligenceFeedback, refreshData } = useContext(StudyContext);
+  const { subjects, topics, mistakes, userTopicStats, submitIntelligenceFeedback, refreshData, recordQuizResult } = useContext(StudyContext);
+  const { profile: intelligenceProfile } = useLearningIntelligence();
   const [selectedTopicId, setSelectedTopicId] = useState('');
   const [activeTool, setActiveTool] = useState('summary');
   const [questionCount, setQuestionCount] = useState(5);
@@ -463,6 +470,7 @@ const AITools = () => {
   const [loadMessage, setLoadMessage] = useState('Analyzing Topic Logic...');
   const [result, setResult] = useState(null);
   const [quizKey, setQuizKey] = useState(0);
+  const [isSimulationMode, setIsSimulationMode] = useState(false);
 
   const tools = [
     { id: 'summary', title: 'Topic Summary', desc: 'Condensed key insights', icon: FileText, prompt: 'Create a concise, structured markdown summary of this topic for a 5-minute review.' },
@@ -484,65 +492,99 @@ const AITools = () => {
   }, [loading]);
 
   const handleGenerate = async (countOverride = null) => {
-    if (activeTool === 'mistake_mastery') {
-       if (mistakes.length === 0) return toast.info("No mistakes to practice. Great work!");
-       // Map Supabase snake_case → QuizViewer camelCase
-       const mapped = mistakes.map(m => ({
-         ...m,
-         // parseInt() is critical: Supabase can return INTEGER columns as strings
-         // after JSONB round-trips. Without it, `idx === correctAnswer` ("2" === 2)
-         // is always false, marking every answer as incorrect.
-         correctAnswer: parseInt(m.correct_answer ?? m.correctAnswer, 10),
-         options: Array.isArray(m.options) ? m.options : JSON.parse(m.options || '[]'),
-         userAnswer: m.user_answer ?? m.userAnswer,
-       }));
-       setResult(mapped);
-       return;
-    }
-
-    if (!selectedTopicId) return toast.error('Please select an area of focus');
-    setLoading(true);
-    setResult(null);
-    const selectedTopic = topics.find(t => t.id === selectedTopicId);
-    const tool = tools.find(t => t.id === activeTool);
-    const finalCount = countOverride || questionCount;
-    
-    // --- 🧠 AI PERSONALIZATION INJECTION --- //
-    const { weakTopics, strongTopics, avgAccuracy } = intelligenceProfile;
-    
-    let basePrompt = tool.id === 'questions' 
-      ? tool.prompt.replace('{COUNT}', finalCount)
-      : tool.prompt;
-
-    const enrichedPrompt = `
-      User Intelligence Profile:
-      - Weak Topics (Needs Focus): ${weakTopics.length ? weakTopics.join(', ') : 'None yet'}
-      - Strong Topics (Avoid Over-testing): ${strongTopics.length ? strongTopics.join(', ') : 'None yet'}
-      - Global Accuracy: ${avgAccuracy}
-
-      Current Target Topic: ${selectedTopic.name}
-      
-      Task: ${basePrompt}
-      
-      Strict Instructions:
-      1. Focus conceptual difficulty heavily on weak areas if related.
-      2. Dynamically adjust reading level based on their Global Accuracy.
-      3. Return ONLY the requested format format without conversational filler.
-    `;
-
     try {
-      const data = await generateStudyMaterial(selectedTopic.name, enrichedPrompt);
-      
-      // Robustness: Basic validation for quiz data
-      if (tool.id === 'questions') {
-        if (!Array.isArray(data) || data.length === 0) throw new Error("Invalid quiz format received.");
-        if (data.some(q => !q.options || q.options.length !== 4)) throw new Error("Incomplete question data detected.");
+      if (activeTool === 'mistake_mastery') {
+         if (mistakes.length === 0) return toast.info("No mistakes to practice. Great work!");
+         // Map Supabase snake_case → QuizViewer camelCase
+         const mapped = mistakes.map(m => ({
+           ...m,
+           correctAnswer: parseInt(m.correct_answer ?? m.correctAnswer, 10),
+           options: Array.isArray(m.options) ? m.options : JSON.parse(m.options || '[]'),
+           userAnswer: m.user_answer ?? m.userAnswer,
+         }));
+         setResult(mapped);
+         setIsSimulationMode(false);
+         return;
+      }
+
+      if (!selectedTopicId) return toast.error('Please select an area of focus');
+      setLoading(true);
+      setResult(null);
+      const selectedTopic = topics.find(t => t.id === selectedTopicId);
+      const tool = tools.find(t => t.id === activeTool);
+      const finalCount = countOverride || questionCount;
+
+      // 1. Simulation Path (Direct to Mock)
+      if (isSimulationMode) {
+        setLoadMessage('Initializing Synthetic Engine...');
+        await new Promise(r => setTimeout(r, 1000));
+        
+        let mockData;
+        if (activeTool === 'summary') mockData = mockService.generateSummary(selectedTopic.name);
+        if (activeTool === 'flashcards') mockData = mockService.generateFlashcards(selectedTopic.name);
+        if (activeTool === 'questions') mockData = mockService.generateQuestions(selectedTopic.name, finalCount);
+        
+        setResult(mockData);
+        toast.info('Synthesizing using Local Logic Engine');
+        return;
       }
       
-      setResult(data);
-      toast.success('Strategy Augmented Successfully!');
-    } catch (err) {
-      toast.error(err.message || 'AI synthesis failed. Power down and restart.');
+      // 2. Intelligence Path (Gemini)
+      const weakTopics = intelligenceProfile?.weakTopics || [];
+      const strongTopics = intelligenceProfile?.strongTopics || [];
+      const avgAccuracy = intelligenceProfile?.avgAccuracy ?? 'N/A';
+      
+      let basePrompt = tool.id === 'questions' 
+        ? tool.prompt.replace('{COUNT}', finalCount)
+        : tool.prompt;
+
+      const enrichedPrompt = `
+        User Intelligence Profile:
+        - Weak Topics (Needs Focus): ${weakTopics.length ? weakTopics.join(', ') : 'None yet'}
+        - Strong Topics (Avoid Over-testing): ${strongTopics.length ? strongTopics.join(', ') : 'None yet'}
+        - Global Accuracy: ${avgAccuracy}
+
+        Current Target Topic: ${selectedTopic.name}
+        
+        Task: ${basePrompt}
+        
+        Strict Instructions:
+        1. Focus conceptual difficulty heavily on weak areas if related.
+        2. Dynamically adjust reading level based on their Global Accuracy.
+        3. Return ONLY the requested format format without conversational filler.
+      `;
+
+      try {
+        const data = await generateStudyMaterial(selectedTopic.name, enrichedPrompt);
+        
+        if (tool.id === 'questions') {
+          if (!Array.isArray(data) || data.length === 0) throw new Error("Invalid quiz format received.");
+          if (data.some(q => !q.options || q.options.length !== 4)) throw new Error("Incomplete question data detected.");
+        }
+        
+        setResult(data);
+        setIsSimulationMode(false);
+        toast.success('Strategy Augmented Successfully!');
+      } catch (err) {
+        if (err.isQuotaExceeded) {
+          toast.warning('Intelligence Cloud busy. Activating Synthetic Engine.');
+          setIsSimulationMode(true);
+          
+          // Direct fallback to mock logic to avoid stale state/infinite loops
+          setLoadMessage('Switching to Synthetic Engine...');
+          await new Promise(r => setTimeout(r, 1200));
+          
+          let mockData;
+          if (activeTool === 'summary') mockData = mockService.generateSummary(selectedTopic.name);
+          if (activeTool === 'flashcards') mockData = mockService.generateFlashcards(selectedTopic.name);
+          if (activeTool === 'questions') mockData = mockService.generateQuestions(selectedTopic.name, finalCount);
+          
+          setResult(mockData);
+          toast.info('Synthesizing using Local Logic Engine');
+        } else {
+          toast.error(err.message || 'AI synthesis failed. Power down and restart.');
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -555,10 +597,18 @@ const AITools = () => {
           <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-foreground">Intelligence Portal</h1>
           <p className="text-muted-foreground mt-2 text-lg font-medium">Augment your study process with synthetic logic.</p>
         </div>
-        <div className="flex items-center gap-3 px-6 py-3 bg-primary/5 border border-primary/20 rounded-2xl shadow-soft">
-          <Sparkles className="w-5 h-5 text-primary" />
-          <span className="text-xs font-black uppercase tracking-widest text-primary">Gemini 2.5 Flash Enabled</span>
-        </div>
+          <div className={`flex items-center gap-3 px-6 py-3 border rounded-2xl shadow-soft transition-all duration-500
+            ${isSimulationMode ? 'bg-amber-500/5 border-amber-500/20 text-amber-600' : 'bg-primary/5 border-primary/20 text-primary'}`}>
+            {isSimulationMode ? <Zap className="w-5 h-5 fill-amber-500" /> : <Sparkles className="w-5 h-5" />}
+            <span className="text-xs font-black uppercase tracking-widest">
+              {isSimulationMode ? 'Synthetic Logic Active' : 'Gemini 2.5 Flash Enabled'}
+            </span>
+            {isSimulationMode && (
+               <button onClick={() => setIsSimulationMode(false)} className="ml-2 hover:bg-amber-500/10 p-1 rounded-md transition-colors">
+                  <RotateCcw className="w-3 h-3" />
+               </button>
+            )}
+          </div>
       </header>
 
       {/* 1. System Parameters Card */}
@@ -576,7 +626,7 @@ const AITools = () => {
               value={selectedTopicId} 
               onChange={(e) => setSelectedTopicId(e.target.value)}
             >
-              <option value="">{activeTool === 'mistake_mastery' ? 'Global Mistakes Selected' : 'Select an area of focus...'}</option>
+              <option value="" disabled hidden>{activeTool === 'mistake_mastery' ? 'Global Mistakes Selected' : 'Select an area of focus...'}</option>
               {topics.map(t => (
                 <option key={t.id} value={t.id}>[{subjects.find(s => s.id === t.subject_id)?.name}] {t.name}</option>
               ))}
@@ -711,6 +761,7 @@ const AITools = () => {
                             key={quizKey}
                             data={result} 
                             isMistakeMode={activeTool === 'mistake_mastery'}
+                            onQuizComplete={(correct, total) => recordQuizResult(selectedTopicId, correct, total)}
                             onRestart={() => { setQuizKey(k => k + 1); }}
                             onNewQuiz={() => { 
                               setResult(null); 
