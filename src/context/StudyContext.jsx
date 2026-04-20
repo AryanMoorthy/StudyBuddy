@@ -117,7 +117,7 @@ export const StudyProvider = ({ children }) => {
     };
 
     triggerInsights();
-  }, [loading, topics, currentStatsMap, mistakes, sessions, lastAiUpdate, coachInsights.length]);
+  }, [loading, user]); // Only trigger on initial load or user change to protect quota
 
   useEffect(() => {
     fetchData();

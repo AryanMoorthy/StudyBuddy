@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 
 const Subjects = () => {
-  const { subjects, addSubject, topics, addTopic, deleteSubject, refreshData } = useContext(StudyContext);
+  const { subjects, addSubject, topics, addTopic, deleteSubject, deleteTopic, refreshData } = useContext(StudyContext);
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [newSubject, setNewSubject] = useState({ name: '', description: '', color: '#8b5cf6' });
@@ -52,6 +52,16 @@ const Subjects = () => {
       refreshData();
     } else {
       toast.error(error.message || 'Failed to add topic');
+    }
+  };
+
+  const handleDeleteTopic = async (e, topicId) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this topic? All progress will be lost.')) {
+      const { error } = await deleteTopic(topicId);
+      if (!error) {
+        refreshData();
+      }
     }
   };
 
@@ -252,7 +262,10 @@ const Subjects = () => {
                                   <p className="text-sm text-foreground font-bold">{new Date(topic.last_reviewed).toLocaleDateString()}</p>
                                 </div>
                               )}
-                              <button className="w-10 h-10 flex items-center justify-center text-muted-foreground/30 hover:text-rose-500 hover:bg-rose-500/5 rounded-xl transition-all">
+                              <button 
+                                onClick={(e) => handleDeleteTopic(e, topic.id)}
+                                className="w-10 h-10 flex items-center justify-center text-muted-foreground/30 hover:text-rose-500 hover:bg-rose-500/5 rounded-xl transition-all"
+                              >
                                 <Trash2 className="w-5 h-5" />
                               </button>
                            </div>

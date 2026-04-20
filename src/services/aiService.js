@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const PRIMARY_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const SECONDARY_KEY = import.meta.env.VITE_GEMINI_API_KEY_SECONDARY;
+const TERTIARY_KEY = import.meta.env.VITE_GEMINI_API_KEY_TERTIARY;
 
 /**
  * Ultra-robust JSON parser for AI responses.
@@ -56,12 +57,13 @@ const postProcess = (data) => {
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
- * Core Generation Logic with Failover Support
+ * Core Generation Logic with Triple-Failover Support
  */
-export const generateStudyMaterial = async (topic, prompt, retryCount = 0, useSecondary = false) => {
+export const generateStudyMaterial = async (topic, prompt, retryCount = 0, keyIndex = 0) => {
   if (!prompt) throw new Error('AI prompt is missing.');
 
-  const activeKey = (useSecondary && SECONDARY_KEY) ? SECONDARY_KEY : PRIMARY_KEY;
+  const keys = [PRIMARY_KEY, SECONDARY_KEY, TERTIARY_KEY].filter(Boolean);
+  const activeKey = keys[keyIndex % keys.length];
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeKey}`;
   const isJsonExpected = prompt.toLowerCase().includes('json') || prompt.toLowerCase().includes('array');
 
@@ -98,31 +100,30 @@ export const generateStudyMaterial = async (topic, prompt, retryCount = 0, useSe
   } catch (error) {
     const status = error.response?.status;
     const message = error.response?.data?.error?.message || error.message;
-    
-    // 1. Identify Service Interruption (Quota or Server Error)
     const isBusy = status === 429 || (status >= 500 && status <= 504) || message.toLowerCase().includes('quota');
 
-    // 2. Failover: If primary fails with ANY service disruption, try secondary key
-    if (isBusy && !useSecondary && SECONDARY_KEY) {
-      console.warn(`Primary AI Channel (${status}). Rotating to Secondary Key...`);
-      return generateStudyMaterial(topic, prompt, 0, true);
+    // 1. Cyclic Rotation: If current key fails for ANY reason, try the NEXT available key
+    if (keyIndex < keys.length - 1) {
+      console.warn(`AI Channel ${keyIndex + 1} Issue (${status}: ${message}). Rotating to next key...`);
+      return generateStudyMaterial(topic, prompt, retryCount, keyIndex + 1);
     }
 
-    // 3. Exponential Backoff: Retry on transient 429 or 5xx errors
-    if ((status === 429 || (status >= 500 && status <= 504)) && retryCount < 2) {
-      const delay = Math.pow(4, retryCount) * 800; // Slightly longer delay for server issues
-      console.warn(`Gemini Service Busy (${status}). Retrying in ${delay}ms... (Attempt ${retryCount + 1})`);
+    // 2. Exponential Backoff: If we've exhausted all keys and it was a 'Busy' error, retry the entire cycle
+    if (isBusy && retryCount < 1) {
+      const delay = 3000; 
+      console.warn(`All AI Channels exhausted/busy. Wait state: ${delay}ms... (Full Cycle Retry)`);
       await sleep(delay);
-      return generateStudyMaterial(topic, prompt, retryCount + 1, useSecondary);
+      return generateStudyMaterial(topic, prompt, retryCount + 1, 0);
     }
 
-    // 4. Final Failure: If both failed or non-service error
+    // 3. Final Fallback: Intelligence Cloud at capacity or fatal error
     console.error('Gemini API Error Context:', error);
+    const isFatal = !isBusy && status !== 429;
     const enhancedError = new Error(isBusy 
       ? 'Intelligence Cloud is currently at peak capacity. Local Synthetic Engine activating.' 
       : `AI Synthesis System: ${message}`
     );
-    enhancedError.isQuotaExceeded = isBusy; // We keep this flag name for compatibility with AITools.jsx
+    enhancedError.isQuotaExceeded = isBusy;
     throw enhancedError;
   }
 };

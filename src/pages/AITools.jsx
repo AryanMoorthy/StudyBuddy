@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import { generateStudyMaterial } from '../services/aiService';
+import { learningEngine } from '../services/learningEngine';
 import { StudyContext } from '../context/StudyContext';
 import { 
   Sparkles, 
@@ -494,6 +495,7 @@ const AITools = () => {
     return () => clearInterval(interval);
   }, [loading]);
 
+
   const handleGenerate = async (countOverride = null) => {
     try {
       if (activeTool === 'mistake_mastery') {
@@ -597,8 +599,31 @@ const AITools = () => {
         setIsSimulationMode(false);
         toast.success('Strategy Augmented Successfully!');
       } catch (err) {
-        toast.error(err.message || 'AI synthesis failed. Your credits may be low or the service is temporarily busy.');
-        // Automatic fallback to Simulation Mode removed as per user request.
+        console.error('aiService.js:120 Gemini API Error Context:', err);
+        
+        // 🚨 SELF-HEALING FAILOVER: If AI is busy/exhausted, automatically switch to Simulation Mode
+        if (err.isQuotaExceeded || err.message?.includes('capacity') || err.message?.includes('429')) {
+          toast.warning('Intelligence Cloud is busy. Activating High-Fidelity Synthetic Engine...', {
+             duration: 4000,
+             icon: '🤖'
+          });
+          
+          await new Promise(r => setTimeout(r, 800)); // Brief pause for UX transition
+          setIsSimulationMode(true);
+          
+          // Re-trigger generation in simulation mode
+          const tool = tools.find(t => t.id === activeTool);
+          const finalCount = countOverride || questionCount;
+          let mockData;
+          if (activeTool === 'summary') mockData = mockService.generateSummary(selectedTopic.name);
+          if (activeTool === 'flashcards') mockData = mockService.generateFlashcards(selectedTopic.name);
+          if (activeTool === 'questions') mockData = mockService.generateQuestions(selectedTopic.name, finalCount);
+          
+          setResult(mockData);
+          toast.success('Strategy Augmented (Synthetic Mode)');
+        } else {
+          toast.error(err.message || 'Failed to generate intelligence. Please try again.');
+        }
       }
     } finally {
       setLoading(false);

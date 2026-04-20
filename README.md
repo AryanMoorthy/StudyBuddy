@@ -1,57 +1,98 @@
 # 🎓 StudyBuddy: Production-Grade Adaptive Learning Ecosystem
 
-StudyBuddy is a next-generation education platform built to optimize long-term retention using adaptive analytics and AI-driven decision-making.
+![StudyBuddy Banner](file:///C:/Users/aryan/.gemini/antigravity/brain/48bc78de-c334-4bcc-8122-42bf9746dcbc/studybuddy_readme_banner_1776698727223.png)
 
-## 🚀 The Intelligence Layer
+StudyBuddy is a next-generation education platform designed to optimize long-term retention through **behavioral analytics**, **mathematical priority modeling**, and **resilient AI integration**. It transforms raw study data into a personalized "Learning OS" that tells you exactly what to study, when, and why.
 
-The application features a sophisticated three-tier decision layer that transforms tracking data into actionable guidance:
+---
 
-### 1. The Brain (`learningEngine.js`)
-At the core is a mathematical engine that calculates:
-- **Spaced Repetition (SM-2)**: Predictive scheduling for optimal revision windows.
-- **Priority Scoring**: A 0.0 - 1.0 score based on accuracy, recency, and mistake density.
-- **Overdue Penalty**: Linear decay models that ensure forgotten topics surface to the top of your queue.
+## 🧠 The Intelligence Architecture
+
+StudyBuddy operates on a three-tier decision layer that eliminates "decision fatigue" for the student.
+
+### 1. The Mathematical Brain (`learningEngine.js`)
+The core engine implements a modified **SM-2 algorithms** and frequency-based decay models:
+- **Priority Scoring**: Every topic receives a real-time priority score (0.0 - 1.0) weighted by:
+  - **40% Accuracy**: Historic performance.
+  - **30% Overdue Factor**: Time elapsed since the last review (Linear decay).
+  - **20% Mistake Density**: Frequency of recent errors.
+  - **10% Recency Decay**: Exponential decay ensuring cold topics aren't forgotten.
+- **Smart Matcher**: A unique keyword-based heuristics engine that bridges legacy/uncategorized mistakes with current topics, ensuring 100% data visibility.
 
 ### 2. The Decision Layer (`actionEngine.js`)
-Converts mathematical scores into human study paths:
-- **Today's Plan**: A deterministic 4-step plan generated daily.
-- **Strategic Distribution**: Automatically balances your time: **70% Growth** (Weak Topics), **20% Revision** (Overdue), and **10% Polishing** (Strong).
+Converts raw mathematical scores into human-centric study paths:
+- **Today's Plan**: Generates a 4-step actionable study plan every 24 hours.
+- **Mastery Distribution**: Automatically maintains a 70/20/10 time split:
+  - **70% Growth**: Focused practice on weak topics.
+  - **20% Revision**: Spaced repetition for overdue topics.
+  - **10% Polishing**: Rapid review for high-mastery subjects.
 
-### 3. The AI Coach (`aiCoach.js`)
-A semantic intelligence layer powered by Gemini:
-- **Behavioral Insights**: Synthesizes your session history into concise, actionable coaching tips.
-- **Deterministic Fallbacks**: Robust rule-based fallbacks ensure you receive guidance even without API connectivity.
-
----
-
-## ✨ Core Features
-
-*   **Actionable Dashboard**: One-click "Start Step" buttons that deep-link directly into Focus Mode.
-*   **Mistake Mastery**: A dedicated persistence system that extracts failed questions for targeted re-practice.
-*   **Immersive Focus Mode**: A Pomodoro-driven environment with integrated Study Music (Lofi, Nature, Classical).
-*   **Curriculum Management**: Structured organization of Subjects and Topics with granular performance tracking.
-*   **Adaptive Theme**: Premium Dark/Glassmorphism UI designed for long study sessions without eye strain.
+### 3. The AI Coach & Resilience Channel
+Powered by Gemini 1.5 Pro, optimized for high reliability:
+- **Resilience Channel**: Built-in dual-key rotation and exponential backoff to handle API rate limits (429/503 errors).
+- **Deterministic Failovers**: If the AI API is exhausted, the system seamlessly switches to local rule-based insights, ensuring the UI remains interactive and helpful 100% of the time.
 
 ---
 
-## 📂 Architecture
+## ✨ Features
 
-- **`src/services/`**: logic and data layer (Supabase, Action Engine, AI Service).
-- **`src/context/`**: Global state management (Study, Focus, Auth).
-- **`src/hooks/`**: Specialized logic extraction (e.g., `useLearningIntelligence`).
-- **`src/pages/`**: Premium UI views built with React and Framer Motion.
-
----
-
-## 🛠️ Tech Stack
-- **React 18** + **Vite**
-- **Supabase** (Auth, PostgREST, Realtime)
-- **Gemini 1.5 Pro** (Intelligence Generation)
-- **Framer Motion** (Micro-animations)
-- **TailwindCSS** (High-fidelity design)
-- **Recharts** (Performance visualization)
+- **Intelligence Portal**: A dedicated hub for AI-generated summaries, practice quizzes, and "Mistake Mastery" drills.
+- **Advanced Dashboard**: Real-time Recharts-powered visualizations showing performance trends, subject efficiency, and mastery pulse.
+- **Mistake Mastery System**: Automatically captures failed quiz attempts and transforms them into targeted practice sessions.
+- **Deep Focus Mode**: A Pomodoro-integrated study environment with spatial audio (Study Music) and distraction-free UIs.
+- **Smart Learning Profile**: A persistent intelligence profile that tracks your strong and weak topics over time.
 
 ---
 
-> [!IMPORTANT]
-> To enable AI Coaching, ensure your `VITE_GEMINI_API_KEY` is configured in your environment variables.
+## 🛠️ Technology Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend** | React 18 (Vite), TailwindCSS, Framer Motion |
+| **Backend/DB** | Supabase (Auth, PostgREST, Realtime) |
+| **Intelligence** | Gemini 1.5 Flash / Pro (via Vertex AI logic) |
+| **Analytics** | Recharts (Responsive/Mount-Guarded) |
+| **Deployment** | production-optimized static build |
+
+---
+
+## 📂 Repository Structure
+
+```bash
+src/
+├── services/     # The "Heavy Lifting" (AI, DB, Logic Engines)
+├── hooks/        # UI-Logic abstraction (Intelligence, Audio, Auth)
+├── context/      # Global State Orchestration
+├── components/   # Atomic & Molecular UI elements (Glassmorphism)
+└── pages/        # Premium analytical views
+```
+
+---
+
+## 🚀 Getting Started
+
+1.  **Clone the Repository**:
+    ```bash
+    git clone https://github.com/AryanMoorthy/StudyBuddy.git
+    ```
+2.  **Configure Environment**:
+    Create a `.env` file with your credentials:
+    ```env
+    VITE_SUPABASE_URL=your_url
+    VITE_SUPABASE_ANON_KEY=your_key
+    VITE_GEMINI_API_KEY=your_key
+    ```
+3.  **Install & Launch**:
+    ```bash
+    npm install
+    npm run dev
+    ```
+
+---
+
+> [!TIP]
+> Use the **Simulation Mode** (the Zap icon) in the Intelligence Portal to generate study material locally without consuming AI API credits.
+
+---
+
+**Built with ❤️ for better learning.**
